@@ -53,12 +53,17 @@ export function LegCard({
       />
 
       <div className="pl-12 py-3 pr-4">
-        {/* Line badge + duration */}
-        <div className="flex items-center gap-2 mb-2">
+        {/* Line badge + duration + direction */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <Badge label={leg.lineShortName} color={leg.lineColor} textColor="#fff" />
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {leg.lineName} · {formatDuration(leg.travelSeconds)}
           </span>
+          {leg.direction && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              · Toward {leg.direction}
+            </span>
+          )}
         </div>
 
         {/* From station */}

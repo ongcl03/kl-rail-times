@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import type { JourneyRoute } from "@/lib/journey/types";
 import { LegCard } from "./LegCard";
 import { Clock, ArrowRight, RefreshCw } from "lucide-react";
@@ -21,20 +22,23 @@ function parseTimeToSeconds(time: string): number {
   return h * 3600 + m * 60;
 }
 
-export function JourneyResult({ journey }: { journey: JourneyRoute }) {
-  // Compute per-leg departure/arrival times from first departure
-  const firstDep = journey.departures[0];
-  const legTimes: { departTime: string; arriveTime: string }[] = [];
-
-  if (firstDep) {
-    let currentSeconds = parseTimeToSeconds(firstDep.time);
-    for (const leg of journey.legs) {
-      const departTime = formatTimeFromSeconds(currentSeconds);
-      currentSeconds += leg.travelSeconds;
-      const arriveTime = formatTimeFromSeconds(currentSeconds);
-      legTimes.push({ departTime, arriveTime });
-    }
+function computeLegTimes(journey: JourneyRoute, departureTime: string) {
+  const times: { departTime: string; arriveTime: string }[] = [];
+  let currentSeconds = parseTimeToSeconds(departureTime);
+  for (const leg of journey.legs) {
+    const departTime = formatTimeFromSeconds(currentSeconds);
+    currentSeconds += leg.travelSeconds;
+    const arriveTime = formatTimeFromSeconds(currentSeconds);
+    times.push({ departTime, arriveTime });
   }
+  return times;
+}
+
+export function JourneyResult({ journey }: { journey: JourneyRoute }) {
+  const [selectedDepIndex, setSelectedDepIndex] = useState(0);
+
+  const selectedDep = journey.departures[selectedDepIndex] || journey.departures[0];
+  const legTimes = selectedDep ? computeLegTimes(journey, selectedDep.time) : [];
 
   return (
     <div className="space-y-6">
@@ -51,15 +55,12 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
               : `${journey.transfers} transfer${journey.transfers > 1 ? "s" : ""}`}
           </p>
         </div>
-        {/* Route line visual */}
         <div className="flex items-center gap-0.5">
           {journey.legs
             .filter((l) => l.type === "rail")
             .map((leg, i) => (
               <div key={i} className="flex items-center gap-0.5">
-                {i > 0 && (
-                  <RefreshCw className="w-3 h-3 text-slate-400 mx-1" />
-                )}
+                {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 mx-1" />}
                 <div
                   className="h-3 rounded-full"
                   style={{
@@ -75,7 +76,7 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
         </div>
       </div>
 
-      {/* Legs */}
+      {/* Legs (always visible, times update when departure is selected) */}
       <div className="space-y-0">
         {journey.legs.map((leg, i) => (
           <LegCard
@@ -89,7 +90,7 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
         ))}
       </div>
 
-      {/* Next departures */}
+      {/* Departures list */}
       {journey.departures.length > 0 && (
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
@@ -97,18 +98,21 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
           </h3>
           <div className="space-y-1.5">
             {journey.departures.map((dep, i) => (
-              <div
+              <button
                 key={i}
-                className={`flex items-center justify-between py-2.5 px-4 rounded-lg ${
-                  i === 0
-                    ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
-                    : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
+                onClick={() => setSelectedDepIndex(i)}
+                className={`w-full flex items-center justify-between py-3 px-4 rounded-lg transition-all text-left ${
+                  i === selectedDepIndex
+                    ? "bg-blue-50 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 ring-2 ring-blue-400/30"
+                    : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className={`text-sm font-mono font-semibold ${
-                    i === 0 ? "text-blue-700 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"
-                  }`}>
+                  <span
+                    className={`text-sm font-mono font-semibold ${
+                      i === selectedDepIndex ? "text-blue-700 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"
+                    }`}
+                  >
                     {dep.time}
                   </span>
                   <ArrowRight className="w-3 h-3 text-slate-400" />
@@ -116,12 +120,14 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
                     {dep.arrivalTime}
                   </span>
                 </div>
-                <span className={`text-sm font-medium ${
-                  i === 0 ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400"
-                }`}>
+                <span
+                  className={`text-sm font-medium ${
+                    i === selectedDepIndex ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400"
+                  }`}
+                >
                   {dep.minutesAway <= 0 ? "Now" : `${dep.minutesAway} min`}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>

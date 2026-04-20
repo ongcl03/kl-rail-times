@@ -121,6 +121,27 @@ function finalizeLeg(
     .slice(1, -1)
     .map((sid) => data.stops.get(sid)?.stop_name || sid);
 
+  // Determine direction (terminal station name) for rail legs
+  let direction: string | undefined;
+  if (leg.type === "rail") {
+    const orderedStops = data.stopsForRoute.get(leg.routeId);
+    if (orderedStops && orderedStops.length > 0) {
+      // Check if we're going forward (direction 0) or backward (direction 1)
+      const fromIdx = orderedStops.findIndex((s) => s.stop_id === leg.stops[0]);
+      const toIdx = orderedStops.findIndex((s) => s.stop_id === leg.stops[leg.stops.length - 1]);
+
+      if (fromIdx !== -1 && toIdx !== -1) {
+        if (fromIdx < toIdx) {
+          // Going forward: terminal is the last stop of the route
+          direction = orderedStops[orderedStops.length - 1].stop_name;
+        } else {
+          // Going backward: terminal is the first stop of the route
+          direction = orderedStops[0].stop_name;
+        }
+      }
+    }
+  }
+
   return {
     routeId: leg.routeId,
     lineName: line?.name || (leg.type === "transfer" ? "Walk" : leg.routeId),
@@ -133,6 +154,7 @@ function finalizeLeg(
     intermediateStops,
     travelSeconds: leg.travelSeconds,
     type: leg.type,
+    direction,
   };
 }
 

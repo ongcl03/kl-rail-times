@@ -16,9 +16,10 @@ export interface JourneyLeg {
   fromStopName: string;
   toStopId: string;
   toStopName: string;
-  intermediateStops: string[]; // stop names
+  intermediateStops: string[];
   travelSeconds: number;
   type: "rail" | "transfer";
+  direction?: string; // "Toward Gombak", "Toward Putra Heights", etc.
 }
 
 export interface JourneyRoute {
