@@ -1,19 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
+import { getCurrentSeconds } from "@/lib/utils";
 
-export function Countdown({ minutesAway, status }: { minutesAway: number; status: string }) {
-  const [seconds, setSeconds] = useState(minutesAway * 60);
-
-  useEffect(() => {
-    setSeconds(minutesAway * 60);
-  }, [minutesAway]);
+export function Countdown({ arrivalSeconds, status }: { arrivalSeconds: number; status: string }) {
+  const computeRemaining = () => Math.max(0, arrivalSeconds - getCurrentSeconds());
+  const [seconds, setSeconds] = useState(computeRemaining);
 
   useEffect(() => {
+    setSeconds(computeRemaining());
     const interval = setInterval(() => {
-      setSeconds((s) => Math.max(0, s - 1));
+      setSeconds(computeRemaining());
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [arrivalSeconds]);
 
   if (status === "arriving" || seconds <= 30) {
     return (

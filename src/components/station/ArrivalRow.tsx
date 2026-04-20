@@ -20,7 +20,7 @@ export function ArrivalRow({
             style={{ backgroundColor: arrival.lineColor }}
           />
           <span className="text-sm text-slate-700 dark:text-slate-300">
-            {arrival.headsign}
+            To {arrival.headsign}
           </span>
         </div>
         <span className="text-sm font-mono font-medium text-slate-500 dark:text-slate-400">
@@ -39,7 +39,7 @@ export function ArrivalRow({
         />
         <div className="min-w-0">
           <p className="font-medium text-slate-900 dark:text-white truncate">
-            {arrival.headsign}
+            To {arrival.headsign}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -51,7 +51,7 @@ export function ArrivalRow({
           </div>
         </div>
       </div>
-      <Countdown minutesAway={arrival.minutesAway} status={arrival.status} />
+      <Countdown arrivalSeconds={arrival.arrivalSeconds} status={arrival.status} />
     </div>
   );
 }

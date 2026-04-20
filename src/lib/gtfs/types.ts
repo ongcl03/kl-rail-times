@@ -70,6 +70,7 @@ export interface Arrival {
   lineId: string;
   headsign: string;
   scheduledArrival: string;
+  arrivalSeconds: number;
   minutesAway: number;
   status: "scheduled" | "approaching" | "arriving" | "departed";
   directionId: number;

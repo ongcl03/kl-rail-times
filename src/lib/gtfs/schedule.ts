@@ -129,6 +129,7 @@ function computeArrivalsForServices(
               headsign,
               // For overnight trains, the display time wraps past midnight
               scheduledArrival: formatTime(arrivalAtStop % SECONDS_IN_DAY),
+              arrivalSeconds: arrivalAtStop,
               minutesAway,
               status,
               directionId: trip.direction_id,
@@ -153,6 +154,7 @@ function computeArrivalsForServices(
           lineId: line?.id || trip.route_id,
           headsign,
           scheduledArrival: formatTime(arrivalSeconds % SECONDS_IN_DAY),
+          arrivalSeconds,
           minutesAway,
           status,
           directionId: trip.direction_id,
