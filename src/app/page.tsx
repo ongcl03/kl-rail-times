@@ -3,6 +3,7 @@ import { useLines } from "@/hooks/useLines";
 import { LineCard } from "@/components/home/LineCard";
 import { SearchBar } from "@/components/home/SearchBar";
 import { LineCardSkeleton } from "@/components/ui/Skeleton";
+import { FavoriteStations } from "@/components/home/FavoriteStations";
 import { Train } from "lucide-react";
 
 export default function HomePage() {
@@ -25,6 +26,8 @@ export default function HomePage() {
       <div className="mb-6">
         <SearchBar lines={lines} />
       </div>
+
+      <FavoriteStations />
 
       <div className="space-y-3">
         {isLoading

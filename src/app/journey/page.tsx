@@ -6,12 +6,15 @@ import { StationPicker } from "@/components/journey/StationPicker";
 import { JourneyResult } from "@/components/journey/JourneyResult";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { BackButton } from "@/components/layout/BackButton";
-import { ArrowUpDown, Navigation, MapPin, Clock } from "lucide-react";
+import { FavoriteJourneys } from "@/components/journey/FavoriteJourneys";
+import { useFavorites } from "@/hooks/useFavorites";
+import { ArrowUpDown, Navigation, MapPin, Clock, Heart } from "lucide-react";
 
 type Station = { stopId: string; stopName: string; lineColor: string } | null;
 
 function JourneyContent() {
   const { lines, isLoading: linesLoading } = useLines();
+  const { favoriteJourneys, isJourneyFavorite, toggleJourney, isLoaded: favsLoaded } = useFavorites();
   const [from, setFrom] = useState<Station>(null);
   const [to, setTo] = useState<Station>(null);
   const [searched, setSearched] = useState(false);
@@ -164,14 +167,56 @@ function JourneyContent() {
           )}
         </div>
 
-        <button
-          onClick={handleSearch}
-          disabled={!from}
-          className="w-full py-3 px-4 rounded-xl font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
-        >
-          {to ? "Plan Journey" : from ? "View Schedule" : "Select a station"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSearch}
+            disabled={!from}
+            className="flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
+          >
+            {to ? "Plan Journey" : from ? "View Schedule" : "Select a station"}
+          </button>
+          {from && to && (
+            <button
+              onClick={() =>
+                toggleJourney({
+                  fromStopId: from.stopId,
+                  fromStopName: from.stopName,
+                  fromLineColor: from.lineColor,
+                  toStopId: to.stopId,
+                  toStopName: to.stopName,
+                  toLineColor: to.lineColor,
+                })
+              }
+              className={`px-3 py-3 rounded-xl border transition-all ${
+                isJourneyFavorite(from.stopId, to.stopId)
+                  ? "text-red-500 border-red-200 dark:border-red-800"
+                  : "text-slate-400 border-slate-200 dark:border-slate-700 hover:text-red-500"
+              }`}
+              aria-label={
+                isJourneyFavorite(from.stopId, to.stopId)
+                  ? "Remove from saved journeys"
+                  : "Save journey"
+              }
+            >
+              <Heart
+                className="w-5 h-5"
+                fill={isJourneyFavorite(from.stopId, to.stopId) ? "currentColor" : "none"}
+              />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Saved journeys */}
+      {favsLoaded && !searched && favoriteJourneys.length > 0 && (
+        <FavoriteJourneys
+          journeys={favoriteJourneys}
+          onSelect={(f, t) => {
+            setFrom(f);
+            setTo(t);
+          }}
+        />
+      )}
 
       {/* Results */}
       {searched && (

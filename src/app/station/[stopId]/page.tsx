@@ -5,6 +5,7 @@ import { ArrivalBoard } from "@/components/station/ArrivalBoard";
 import { BackButton } from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { FavoriteStationButton } from "@/components/station/FavoriteStationButton";
 
 export default function StationPage() {
   const { stopId } = useParams<{ stopId: string }>();
@@ -55,20 +56,23 @@ export default function StationPage() {
               className="w-1 self-stretch rounded-full flex-shrink-0"
               style={{ backgroundColor: primaryColor }}
             />
-            <div>
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                {stationLines.map((l) => (
-                  <Badge
-                    key={l.shortName}
-                    label={`${l.shortName} ${l.name}`}
-                    color={l.color}
-                    textColor={l.textColor}
-                  />
-                ))}
+            <div className="flex-1 flex items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  {stationLines.map((l) => (
+                    <Badge
+                      key={l.shortName}
+                      label={`${l.shortName} ${l.name}`}
+                      color={l.color}
+                      textColor={l.textColor}
+                    />
+                  ))}
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {stationName}
+                </h1>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                {stationName}
-              </h1>
+              <FavoriteStationButton stopId={stopId} stopName={stationName} lineColor={primaryColor} />
             </div>
           </div>
         </div>
