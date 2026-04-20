@@ -3,7 +3,13 @@ import { useState, useEffect } from "react";
 import { getCurrentSeconds } from "@/lib/utils";
 
 export function Countdown({ arrivalSeconds, status }: { arrivalSeconds: number; status: string }) {
-  const computeRemaining = () => Math.max(0, arrivalSeconds - getCurrentSeconds());
+  const computeRemaining = () => {
+    const now = getCurrentSeconds();
+    // Overnight trains have arrivalSeconds > 86400 (e.g. 24:08 = 86880)
+    // but getCurrentSeconds() returns 0-86399, so shift now into the same space
+    const adjustedNow = arrivalSeconds >= 86400 && now < 43200 ? now + 86400 : now;
+    return Math.max(0, arrivalSeconds - adjustedNow);
+  };
   const [seconds, setSeconds] = useState(computeRemaining);
 
   useEffect(() => {
