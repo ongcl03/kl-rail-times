@@ -5,6 +5,7 @@ import { useJourney } from "@/hooks/useJourney";
 import { StationPicker } from "@/components/journey/StationPicker";
 import { JourneyResult } from "@/components/journey/JourneyResult";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { BackButton } from "@/components/layout/BackButton";
 import { ArrowUpDown, Navigation, MapPin, Clock } from "lucide-react";
 
 type Station = { stopId: string; stopName: string; lineColor: string } | null;
@@ -65,15 +66,20 @@ function JourneyContent() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950 mb-3">
-          <Navigation className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <BackButton />
+        <div className="flex items-center gap-3 mt-2">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950">
+            <Navigation className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">
+              Journey Planner
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Plan your route across the Klang Valley rail network
+            </p>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Journey Planner
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Plan your route across the Klang Valley rail network
-        </p>
       </div>
 
       {/* Form */}
