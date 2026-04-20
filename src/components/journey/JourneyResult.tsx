@@ -2,7 +2,8 @@
 import { useState } from "react";
 import type { JourneyRoute } from "@/lib/journey/types";
 import { LegCard } from "./LegCard";
-import { Clock, ArrowRight, RefreshCw } from "lucide-react";
+import { Clock, ArrowRight, RefreshCw, MapPin } from "lucide-react";
+import Link from "next/link";
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -40,6 +41,21 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
   const selectedDep = journey.departures[selectedDepIndex] || journey.departures[0];
   const legTimes = selectedDep ? computeLegTimes(journey, selectedDep.time) : [];
 
+  const fromStopId = journey.legs[0]?.fromStopId;
+  const toStopId = journey.legs[journey.legs.length - 1]?.toStopId;
+
+  // Build map URL with leg info: leg=fromStop,toStop,lineShortName for each rail leg
+  const mapUrl = (() => {
+    if (!fromStopId || !toStopId) return "";
+    const params = new URLSearchParams();
+    params.set("from", fromStopId);
+    params.set("to", toStopId);
+    journey.legs
+      .filter((l) => l.type === "rail")
+      .forEach((l) => params.append("leg", `${l.fromStopId},${l.toStopId},${l.lineShortName}`));
+    return `/map?${params.toString()}`;
+  })();
+
   return (
     <div className="space-y-6">
       {/* Summary bar */}
@@ -72,7 +88,8 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
           {journey.legs
             .filter((l) => l.type === "rail")
             .map((leg, i) => (
@@ -90,6 +107,16 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
                 </span>
               </div>
             ))}
+          </div>
+          {mapUrl && (
+            <Link
+              href={mapUrl}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+              title="View on map"
+            >
+              <MapPin className="w-4 h-4" />
+            </Link>
+          )}
         </div>
         </div>
         {journey.fare && (

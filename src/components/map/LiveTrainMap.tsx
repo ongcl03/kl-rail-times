@@ -1,11 +1,14 @@
 "use client";
-import { useState, useMemo } from "react";
-import { MapContainer, TileLayer, Polyline } from "react-leaflet";
+import { useState, useMemo, useEffect } from "react";
+import { MapContainer, TileLayer, Polyline, useMap } from "react-leaflet";
+import { useSearchParams } from "next/navigation";
+import L from "leaflet";
 import { useVehiclePositions } from "@/hooks/useVehiclePositions";
 import { useLines } from "@/hooks/useLines";
 import { LINES, matchLineByRealtimeRouteId } from "@/lib/lines";
 import { TrainMarker } from "./TrainMarker";
 import { StationMarker } from "./StationMarker";
+import { JourneyMarker } from "./JourneyMarker";
 import { LineFilter } from "./LineFilter";
 import { RefreshCw, Layers } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -24,6 +27,16 @@ const STYLE_LABELS: Record<MapStyle, string> = {
   dark: "Dark",
   standard: "Standard",
 };
+
+function MapFitBounds({ bounds }: { bounds: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (bounds.length >= 2) {
+      map.fitBounds(bounds as L.LatLngBoundsExpression, { padding: [60, 60] });
+    }
+  }, [map, bounds[0]?.[0], bounds[0]?.[1], bounds[1]?.[0], bounds[1]?.[1]]);
+  return null;
+}
 
 export function LiveTrainMap() {
   const { vehicles, isLoading: vehiclesLoading, refresh } = useVehiclePositions();
@@ -76,6 +89,80 @@ export function LiveTrainMap() {
     return map;
   }, []);
 
+  // Journey params
+  const searchParams = useSearchParams();
+  const journeyFrom = searchParams.get("from");
+  const journeyTo = searchParams.get("to");
+  const journeyLegs = searchParams.getAll("leg"); // "fromStop,toStop,lineShortName"
+
+  const isJourneyMode = journeyFrom && journeyTo && journeyLegs.length > 0;
+
+  // Parse journey legs into structured data
+  const parsedLegs = useMemo(() => {
+    return journeyLegs.map((leg) => {
+      const [fromStop, toStop, lineShortName] = leg.split(",");
+      const lineMeta = LINES.find((l) => l.shortName === lineShortName);
+      return { fromStop, toStop, lineShortName, color: lineMeta?.color || "#6B7280" };
+    });
+  }, [journeyLegs.join("|")]);
+
+  // Build coordinate + color lookup for all stations
+  const stationLookup = useMemo(() => {
+    const map = new Map<string, { lat: number; lon: number; color: string; name: string }>();
+    for (const line of lines) {
+      for (const s of line.stations) {
+        if (s.stopLat && s.stopLon && !map.has(s.stopId)) {
+          map.set(s.stopId, { lat: s.stopLat, lon: s.stopLon, color: line.color, name: s.stopName });
+        }
+      }
+    }
+    return map;
+  }, [lines]);
+
+  // Build ordered station lists per line for segment extraction
+  const lineStationOrder = useMemo(() => {
+    const map = new Map<string, { stopId: string; lat: number; lon: number }[]>();
+    for (const line of lines) {
+      const stops = line.stations
+        .filter((s) => s.stopLat && s.stopLon)
+        .map((s) => ({ stopId: s.stopId, lat: s.stopLat, lon: s.stopLon }));
+      map.set(line.shortName, stops);
+    }
+    return map;
+  }, [lines]);
+
+  // For journey mode: extract route segments (polylines + station dots)
+  const journeySegments = useMemo(() => {
+    if (!isJourneyMode) return [];
+    return parsedLegs.map((leg) => {
+      const stops = lineStationOrder.get(leg.lineShortName) || [];
+      const fromIdx = stops.findIndex((s) => s.stopId === leg.fromStop);
+      const toIdx = stops.findIndex((s) => s.stopId === leg.toStop);
+      if (fromIdx === -1 || toIdx === -1) return { coords: [], stations: [], color: leg.color };
+      const start = Math.min(fromIdx, toIdx);
+      const end = Math.max(fromIdx, toIdx);
+      const segment = stops.slice(start, end + 1);
+      return {
+        coords: segment.map((s) => [s.lat, s.lon] as [number, number]),
+        stations: segment,
+        color: leg.color,
+      };
+    });
+  }, [isJourneyMode, parsedLegs, lineStationOrder]);
+
+  // All bounds for journey fitBounds
+  const journeyBounds = useMemo(() => {
+    if (!isJourneyMode) return [];
+    const allCoords: [number, number][] = [];
+    for (const seg of journeySegments) {
+      allCoords.push(...seg.coords);
+    }
+    return allCoords;
+  }, [isJourneyMode, journeySegments]);
+
+  const journeyFromStation = journeyFrom ? stationLookup.get(journeyFrom) : undefined;
+  const journeyToStation = journeyTo ? stationLookup.get(journeyTo) : undefined;
+
   const tileUrl = TILE_URLS[mapStyle];
 
   return (
@@ -88,54 +175,107 @@ export function LiveTrainMap() {
       >
         <TileLayer url={tileUrl} key={tileUrl} />
 
-        {/* Rail lines */}
-        {lines.map((line) => {
-          const realtimeId = lineIdToRealtimeId.get(line.id);
-          if (realtimeId && !visibleLines.has(realtimeId)) return null;
-
-          const coords = line.stations
-            .filter((s) => s.stopLat && s.stopLon)
-            .map((s) => [s.stopLat, s.stopLon] as [number, number]);
-
-          return (
-            <Polyline
-              key={`line-${line.id}`}
-              positions={coords}
-              pathOptions={{ color: line.color, weight: 3, opacity: 0.7 }}
-            />
-          );
-        })}
-
-        {/* Station markers */}
-        {lines.map((line) => {
-          const realtimeId = lineIdToRealtimeId.get(line.id);
-          if (realtimeId && !visibleLines.has(realtimeId)) return null;
-
-          return line.stations.map((station) =>
-            station.stopLat && station.stopLon ? (
-              <StationMarker
-                key={station.stopId}
-                position={[station.stopLat, station.stopLon]}
-                name={station.stopName}
-                stopId={station.stopId}
-                color={line.color}
+        {isJourneyMode ? (
+          <>
+            {/* Journey route segments */}
+            {journeySegments.map((seg, i) => (
+              <Polyline
+                key={`journey-line-${i}`}
+                positions={seg.coords}
+                pathOptions={{ color: seg.color, weight: 5, opacity: 0.9 }}
               />
-            ) : null
-          );
-        })}
+            ))}
 
-        {/* Train markers */}
-        {visibleVehicles.map((v) => (
-          <TrainMarker
-            key={v.id}
-            vehicle={v}
-            stopName={v.stopId ? stopNameMap.get(v.stopId) : undefined}
-          />
-        ))}
+            {/* Journey station dots */}
+            {journeySegments.map((seg, i) =>
+              seg.stations.map((s) => (
+                <StationMarker
+                  key={`j-${i}-${s.stopId}`}
+                  position={[s.lat, s.lon]}
+                  name={stopNameMap.get(s.stopId) || s.stopId}
+                  stopId={s.stopId}
+                  color={seg.color}
+                />
+              ))
+            )}
+
+            {/* Start / End markers */}
+            {journeyFromStation && journeyFrom && (
+              <JourneyMarker
+                position={[journeyFromStation.lat, journeyFromStation.lon]}
+                label="A"
+                name={journeyFromStation.name}
+                stopId={journeyFrom}
+                color={journeyFromStation.color}
+                type="start"
+              />
+            )}
+            {journeyToStation && journeyTo && (
+              <JourneyMarker
+                position={[journeyToStation.lat, journeyToStation.lon]}
+                label="B"
+                name={journeyToStation.name}
+                stopId={journeyTo}
+                color={journeyToStation.color}
+                type="end"
+              />
+            )}
+
+            {/* Fit bounds to journey */}
+            {journeyBounds.length >= 2 && <MapFitBounds bounds={journeyBounds} />}
+          </>
+        ) : (
+          <>
+            {/* Rail lines */}
+            {lines.map((line) => {
+              const realtimeId = lineIdToRealtimeId.get(line.id);
+              if (realtimeId && !visibleLines.has(realtimeId)) return null;
+
+              const coords = line.stations
+                .filter((s) => s.stopLat && s.stopLon)
+                .map((s) => [s.stopLat, s.stopLon] as [number, number]);
+
+              return (
+                <Polyline
+                  key={`line-${line.id}`}
+                  positions={coords}
+                  pathOptions={{ color: line.color, weight: 3, opacity: 0.7 }}
+                />
+              );
+            })}
+
+            {/* Station markers */}
+            {lines.map((line) => {
+              const realtimeId = lineIdToRealtimeId.get(line.id);
+              if (realtimeId && !visibleLines.has(realtimeId)) return null;
+
+              return line.stations.map((station) =>
+                station.stopLat && station.stopLon ? (
+                  <StationMarker
+                    key={station.stopId}
+                    position={[station.stopLat, station.stopLon]}
+                    name={station.stopName}
+                    stopId={station.stopId}
+                    color={line.color}
+                  />
+                ) : null
+              );
+            })}
+
+            {/* Train markers */}
+            {visibleVehicles.map((v) => (
+              <TrainMarker
+                key={v.id}
+                vehicle={v}
+                stopName={v.stopId ? stopNameMap.get(v.stopId) : undefined}
+              />
+            ))}
+          </>
+        )}
       </MapContainer>
 
-      {/* Line filter */}
-      <LineFilter visibleLines={visibleLines} onToggle={handleToggle} />
+      {/* Line filter (hidden in journey mode) */}
+      {!isJourneyMode && <LineFilter visibleLines={visibleLines} onToggle={handleToggle} />}
 
       {/* Map style picker */}
       <div className="absolute bottom-12 right-4 z-[1000]">
