@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Train, Navigation, Sun, Moon } from "lucide-react";
+import { Train, Navigation, Map, Sun, Moon } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
 export function Header() {
@@ -21,6 +21,13 @@ export function Header() {
           >
             <Navigation className="w-4 h-4" />
             Journey
+          </Link>
+          <Link
+            href="/map"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+          >
+            <Map className="w-4 h-4" />
+            Map
           </Link>
           <button
             onClick={toggleTheme}

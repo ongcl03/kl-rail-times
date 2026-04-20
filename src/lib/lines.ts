@@ -6,6 +6,7 @@ export interface LineMeta {
   textColor: string;
   type: string;
   gtfsRouteId: string; // exact match against GTFS route_id
+  realtimeRouteId: string; // route_id from GTFS-realtime vehicle positions feed
 }
 
 export const LINES: LineMeta[] = [
@@ -17,6 +18,7 @@ export const LINES: LineMeta[] = [
     textColor: "#FFFFFF",
     type: "LRT",
     gtfsRouteId: "KJ",
+    realtimeRouteId: "KJ",
   },
   {
     id: "ampang",
@@ -26,6 +28,7 @@ export const LINES: LineMeta[] = [
     textColor: "#FFFFFF",
     type: "LRT",
     gtfsRouteId: "AG",
+    realtimeRouteId: "AG",
   },
   {
     id: "sri-petaling",
@@ -35,6 +38,7 @@ export const LINES: LineMeta[] = [
     textColor: "#FFFFFF",
     type: "LRT",
     gtfsRouteId: "PH",
+    realtimeRouteId: "SP",
   },
   {
     id: "mrt-kajang",
@@ -44,6 +48,7 @@ export const LINES: LineMeta[] = [
     textColor: "#FFFFFF",
     type: "MRT",
     gtfsRouteId: "KGL",
+    realtimeRouteId: "KG",
   },
   {
     id: "mrt-putrajaya",
@@ -53,6 +58,7 @@ export const LINES: LineMeta[] = [
     textColor: "#000000",
     type: "MRT",
     gtfsRouteId: "PYL",
+    realtimeRouteId: "PY",
   },
   {
     id: "monorail",
@@ -62,6 +68,7 @@ export const LINES: LineMeta[] = [
     textColor: "#000000",
     type: "Monorail",
     gtfsRouteId: "MR",
+    realtimeRouteId: "MR",
   },
   {
     id: "brt-sunway",
@@ -71,9 +78,14 @@ export const LINES: LineMeta[] = [
     textColor: "#FFFFFF",
     type: "BRT",
     gtfsRouteId: "BRT",
+    realtimeRouteId: "BRT",
   },
 ];
 
 export function matchLineByRouteId(routeId: string): LineMeta | undefined {
   return LINES.find((line) => line.gtfsRouteId === routeId);
+}
+
+export function matchLineByRealtimeRouteId(routeId: string): LineMeta | undefined {
+  return LINES.find((line) => line.realtimeRouteId === routeId);
 }

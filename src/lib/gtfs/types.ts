@@ -84,7 +84,7 @@ export interface LineInfo {
   textColor: string;
   type: string;
   stationCount: number;
-  stations: { stopId: string; stopName: string }[];
+  stations: { stopId: string; stopName: string; stopLat: number; stopLon: number }[];
 }
 
 export interface TimetableEntry {

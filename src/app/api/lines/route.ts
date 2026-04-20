@@ -9,11 +9,11 @@ export async function GET() {
     const lines: LineInfo[] = [];
 
     for (const lineMeta of LINES) {
-      const stations: { stopId: string; stopName: string }[] = [];
+      const stations: { stopId: string; stopName: string; stopLat: number; stopLon: number }[] = [];
       const orderedStops = data.stopsForRoute.get(lineMeta.gtfsRouteId);
       if (orderedStops) {
         for (const stop of orderedStops) {
-          stations.push({ stopId: stop.stop_id, stopName: stop.stop_name });
+          stations.push({ stopId: stop.stop_id, stopName: stop.stop_name, stopLat: stop.stop_lat, stopLon: stop.stop_lon });
         }
       }
 
