@@ -1,10 +1,12 @@
 "use client";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useLines } from "@/hooks/useLines";
 import { ArrivalBoard } from "@/components/station/ArrivalBoard";
 import { BackButton } from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { CalendarDays } from "lucide-react";
 
 export default function StationPage() {
   const { stopId } = useParams<{ stopId: string }>();
@@ -77,6 +79,15 @@ export default function StationPage() {
       {/* Arrival board */}
       <div className="max-w-2xl mx-auto px-4 py-6">
         <ArrivalBoard stopId={stopId} stopName={stationName} />
+
+        {/* Link to full timetable */}
+        <Link
+          href={`/station/${stopId}/timetable`}
+          className="mt-4 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
+        >
+          <CalendarDays className="w-4 h-4" />
+          View Full Day Timetable
+        </Link>
       </div>
     </div>
   );

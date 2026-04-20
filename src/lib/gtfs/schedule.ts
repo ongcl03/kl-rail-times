@@ -265,17 +265,27 @@ export async function getNextArrivals(
 
 // --- Full Day Timetable ---
 
+// dayType: "weekday" | "saturday" | "sunday" — maps to a fake day-of-week for calendar lookup
+const DAY_TYPE_TO_DOW: Record<string, number> = {
+  weekday: 1,  // Monday
+  saturday: 6,
+  sunday: 0,
+};
+
 const fullDayCache = new Map<
   string,
-  { date: string; result: FullDaySchedule }
+  { key: string; result: FullDaySchedule }
 >();
 
 export async function getFullDaySchedule(
-  stopId: string
+  stopId: string,
+  dayType?: string
 ): Promise<FullDaySchedule> {
+  const resolvedDayType = dayType || getDayType();
+  const cacheKey = `${stopId}_${resolvedDayType}`;
   const today = getMalaysiaDateString();
-  const cached = fullDayCache.get(stopId);
-  if (cached && cached.date === today) {
+  const cached = fullDayCache.get(cacheKey);
+  if (cached && cached.key === `${today}_${resolvedDayType}`) {
     return cached.result;
   }
 
@@ -288,8 +298,8 @@ export async function getFullDaySchedule(
 
   const { dir0Label, dir1Label } = getDirectionLabels(data, stopIds);
 
-  const todayDow = getMalaysiaDayOfWeek();
-  const activeServices = getActiveServiceIdsForDay(data.calendar, todayDow, today);
+  const dow = DAY_TYPE_TO_DOW[resolvedDayType] ?? getMalaysiaDayOfWeek();
+  const activeServices = getActiveServiceIdsForDay(data.calendar, dow, today);
 
   const direction0: TimetableEntry[] = [];
   const direction1: TimetableEntry[] = [];
@@ -373,6 +383,14 @@ export async function getFullDaySchedule(
   direction1.sort((a, b) => a.arrivalSeconds - b.arrivalSeconds);
 
   const result: FullDaySchedule = { direction0, direction1, dir0Label, dir1Label };
-  fullDayCache.set(stopId, { date: today, result });
+  fullDayCache.set(cacheKey, { key: `${today}_${resolvedDayType}`, result });
   return result;
+}
+
+/** Get current day type from Malaysia time */
+function getDayType(): string {
+  const dow = getMalaysiaDayOfWeek();
+  if (dow === 0) return "sunday";
+  if (dow === 6) return "saturday";
+  return "weekday";
 }

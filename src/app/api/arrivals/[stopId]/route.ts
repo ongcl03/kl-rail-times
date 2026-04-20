@@ -13,7 +13,8 @@ export async function GET(
     const mode = url.searchParams.get("mode");
 
     if (mode === "fullday") {
-      const schedule = await getFullDaySchedule(stopId);
+      const dayType = url.searchParams.get("day") || undefined;
+      const schedule = await getFullDaySchedule(stopId, dayType);
       return NextResponse.json(schedule, {
         headers: { "Cache-Control": "public, max-age=300" },
       });

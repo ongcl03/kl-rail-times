@@ -14,11 +14,11 @@ export function TimetableView({
   nowSeconds,
 }: {
   entries: TimetableEntry[];
-  nowSeconds: number;
+  nowSeconds: number; // pass -1 to disable highlighting/dimming
 }) {
   const currentHourRef = useRef<HTMLDivElement>(null);
+  const hasTimeContext = nowSeconds >= 0;
 
-  // Group entries by hour
   const hourGroups = useMemo(() => {
     const groups = new Map<number, TimetableEntry[]>();
     for (const entry of entries) {
@@ -27,24 +27,22 @@ export function TimetableView({
       list.push(entry);
       groups.set(hour, list);
     }
-    // Sort each group
     for (const [, list] of groups) {
       list.sort((a, b) => a.arrivalSeconds - b.arrivalSeconds);
     }
     return groups;
   }, [entries]);
 
-  // Find the next upcoming entry
   const nextEntrySeconds = useMemo(() => {
+    if (!hasTimeContext) return -1;
     for (const entry of entries) {
       if (entry.arrivalSeconds >= nowSeconds) return entry.arrivalSeconds;
     }
     return -1;
-  }, [entries, nowSeconds]);
+  }, [entries, nowSeconds, hasTimeContext]);
 
-  const currentHour = Math.floor(nowSeconds / 3600);
+  const currentHour = hasTimeContext ? Math.floor(nowSeconds / 3600) : -1;
 
-  // Auto-scroll to current hour on mount
   useEffect(() => {
     if (currentHourRef.current) {
       currentHourRef.current.scrollIntoView({
@@ -59,18 +57,17 @@ export function TimetableView({
   if (sortedHours.length === 0) {
     return (
       <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">
-        No schedule data available for today
+        No schedule data available
       </p>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {sortedHours.map((hour) => {
         const group = hourGroups.get(hour)!;
-        const isPastHour = hour < currentHour;
-        const isCurrentHour = hour === currentHour;
-        // Compute average headway for this hour
+        const isPastHour = hasTimeContext && hour < currentHour;
+        const isCurrentHour = hasTimeContext && hour === currentHour;
         const headway =
           group.length > 1
             ? Math.round(
@@ -88,45 +85,43 @@ export function TimetableView({
             className={isPastHour ? "opacity-40" : ""}
           >
             {/* Hour header */}
-            <div className="flex items-center gap-2 mb-2 sticky top-0 bg-background/95 backdrop-blur-sm py-1 z-10">
+            <div className="flex items-center gap-2 mb-2.5 sticky top-14 bg-background/95 backdrop-blur-sm py-1.5 z-10">
               <span
-                className={`text-xs font-semibold uppercase tracking-wider ${
+                className={`text-xs font-bold uppercase tracking-wider ${
                   isCurrentHour
                     ? "text-blue-600 dark:text-blue-400"
-                    : "text-slate-400 dark:text-slate-500"
+                    : "text-slate-500 dark:text-slate-400"
                 }`}
               >
                 {formatHourLabel(hour)}
               </span>
               {headway && (
                 <span className="text-xs text-slate-400 dark:text-slate-500">
-                  every ~{headway} min
+                  ~{headway} min interval
                 </span>
               )}
               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                {group.length}
+              </span>
             </div>
 
-            {/* Time pills grid */}
-            <div className="flex flex-wrap gap-1.5">
+            {/* Time pills */}
+            <div className="flex flex-wrap gap-2">
               {group.map((entry, i) => {
-                const isPast = entry.arrivalSeconds < nowSeconds;
+                const isPast = hasTimeContext && entry.arrivalSeconds < nowSeconds;
                 const isNext = entry.arrivalSeconds === nextEntrySeconds;
 
                 return (
                   <span
                     key={`${entry.arrivalSeconds}-${i}`}
-                    className={`inline-flex items-center text-sm font-mono px-2.5 py-1 rounded-lg border transition-all ${
+                    className={`inline-flex items-center text-sm font-mono rounded-lg transition-all ${
                       isNext
-                        ? "bg-blue-50 dark:bg-blue-950 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 ring-2 ring-blue-400/30 font-semibold"
+                        ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40 font-bold px-3 py-1.5"
                         : isPast
-                          ? "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700/50 text-slate-400 dark:text-slate-500"
-                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                          ? "text-slate-400 dark:text-slate-600 px-2.5 py-1"
+                          : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1"
                     }`}
-                    style={
-                      isNext
-                        ? undefined
-                        : { borderLeftColor: entry.lineColor, borderLeftWidth: "3px" }
-                    }
                   >
                     {entry.scheduledArrival}
                   </span>
