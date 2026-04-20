@@ -5,6 +5,7 @@ import { StationList } from "@/components/line/StationList";
 import { BackButton } from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { MapPin } from "lucide-react";
 
 export default function LinePage() {
   const { lineId } = useParams<{ lineId: string }>();
@@ -14,7 +15,7 @@ export default function LinePage() {
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <Skeleton className="h-6 w-24 mb-4" />
+        <Skeleton className="h-10 w-24 mb-4" />
         <Skeleton className="h-8 w-48 mb-2" />
         <Skeleton className="h-5 w-32 mb-8" />
         <div className="space-y-4">
@@ -38,25 +39,53 @@ export default function LinePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
-      <BackButton />
-
-      <div className="mt-4 mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <Badge label={line.shortName} color={line.color} textColor={line.textColor} />
-          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            {line.type}
-          </span>
+    <div className="animate-fade-in">
+      {/* Colored header banner */}
+      <div
+        className="relative overflow-hidden"
+        style={{ backgroundColor: line.color }}
+      >
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white_0%,transparent_60%)] pointer-events-none" />
+        <div className="max-w-2xl mx-auto px-4 pt-4 pb-6">
+          <BackButton variant="light" />
+          <div className="mt-4 flex items-end gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.2)",
+                    color: line.textColor,
+                  }}
+                >
+                  {line.type}
+                </span>
+              </div>
+              <h1
+                className="text-2xl font-bold"
+                style={{ color: line.textColor }}
+              >
+                {line.name}
+              </h1>
+              <div className="flex items-center gap-1.5 mt-1" style={{ color: line.textColor, opacity: 0.8 }}>
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="text-sm">{line.stationCount} stations</span>
+              </div>
+            </div>
+            <span
+              className="text-5xl font-black opacity-20"
+              style={{ color: line.textColor }}
+            >
+              {line.shortName}
+            </span>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {line.name}
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          {line.stationCount} stations
-        </p>
       </div>
 
-      <StationList line={line} />
+      {/* Station list */}
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <StationList line={line} />
+      </div>
     </div>
   );
 }

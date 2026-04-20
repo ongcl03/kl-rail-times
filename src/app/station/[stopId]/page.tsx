@@ -10,7 +10,6 @@ export default function StationPage() {
   const { stopId } = useParams<{ stopId: string }>();
   const { lines, isLoading } = useLines();
 
-  // Find station info from lines data
   let stationName = stopId;
   const stationLines: { name: string; shortName: string; color: string; textColor: string }[] = [];
 
@@ -29,10 +28,12 @@ export default function StationPage() {
     }
   }
 
+  const primaryColor = stationLines[0]?.color || "#6B7280";
+
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <Skeleton className="h-6 w-24 mb-4" />
+        <Skeleton className="h-10 w-24 mb-4" />
         <Skeleton className="h-8 w-48 mb-6" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -44,26 +45,39 @@ export default function StationPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
-      <BackButton />
-
-      <div className="mt-4 mb-6">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          {stationLines.map((l) => (
-            <Badge
-              key={l.shortName}
-              label={l.shortName}
-              color={l.color}
-              textColor={l.textColor}
+    <div className="animate-fade-in">
+      {/* Station header */}
+      <div className="border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-2xl mx-auto px-4 pt-4 pb-5">
+          <BackButton />
+          <div className="mt-3 flex items-center gap-4">
+            <div
+              className="w-1 self-stretch rounded-full flex-shrink-0"
+              style={{ backgroundColor: primaryColor }}
             />
-          ))}
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                {stationLines.map((l) => (
+                  <Badge
+                    key={l.shortName}
+                    label={`${l.shortName} ${l.name}`}
+                    color={l.color}
+                    textColor={l.textColor}
+                  />
+                ))}
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                {stationName}
+              </h1>
+            </div>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {stationName}
-        </h1>
       </div>
 
-      <ArrivalBoard stopId={stopId} stopName={stationName} />
+      {/* Arrival board */}
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <ArrivalBoard stopId={stopId} stopName={stationName} />
+      </div>
     </div>
   );
 }
