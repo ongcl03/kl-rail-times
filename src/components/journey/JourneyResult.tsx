@@ -136,21 +136,34 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
         )}
       </div>
 
-      {/* Legs (always visible, times update when departure is selected) */}
-      <div className="space-y-0">
-        {journey.legs.map((leg, i) => (
-          <LegCard
-            key={i}
-            leg={leg}
-            isFirst={i === 0}
-            isLast={i === journey.legs.length - 1}
-            departTime={legTimes[i]?.departTime}
-            arriveTime={legTimes[i]?.arriveTime}
-          />
-        ))}
-      </div>
+      {/* Legs */}
+      {journey.departures.length > 0 && (
+        <div className="space-y-0">
+          {journey.legs.map((leg, i) => (
+            <LegCard
+              key={i}
+              leg={leg}
+              isFirst={i === 0}
+              isLast={i === journey.legs.length - 1}
+              departTime={legTimes[i]?.departTime}
+              arriveTime={legTimes[i]?.arriveTime}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Departures list */}
+      {journey.departures.length === 0 && (
+        <div className="text-center py-6">
+          <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+            No departures available right now
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            Service may have ended for today. Try a different time.
+          </p>
+        </div>
+      )}
       {journey.departures.length > 0 && (
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
