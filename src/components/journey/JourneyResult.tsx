@@ -43,7 +43,8 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
   return (
     <div className="space-y-6">
       {/* Summary bar */}
-      <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+      <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+        <div className="flex items-center gap-4">
         <div className="flex-1">
           {selectedDep && (
             <div className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white font-mono">
@@ -90,24 +91,23 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
               </div>
             ))}
         </div>
-      </div>
-
-      {/* Fare breakdown */}
-      {journey.fare && (
-        <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 px-1">
-          <span>
-            <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cashless}</span> cashless
-          </span>
-          <span>·</span>
-          <span>
-            <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cash}</span> cash
-          </span>
-          <span>·</span>
-          <span>
-            <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.concession}</span> concession
-          </span>
         </div>
-      )}
+        {journey.fare && (
+          <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 pt-3 mt-3 border-t border-slate-100 dark:border-slate-700">
+            <span>
+              <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cashless}</span> cashless
+            </span>
+            <span>·</span>
+            <span>
+              <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cash}</span> cash
+            </span>
+            <span>·</span>
+            <span>
+              <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.concession}</span> concession
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Legs (always visible, times update when departure is selected) */}
       <div className="space-y-0">
