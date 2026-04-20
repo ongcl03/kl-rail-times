@@ -1,7 +1,7 @@
 import type { GTFSData } from "../gtfs/types";
 import type { NetworkGraph, JourneyLeg, JourneyRoute } from "./types";
 import { matchLineByRouteId } from "../lines";
-import { parseGTFSTime, getCurrentSeconds, formatTime, getMalaysiaDayOfWeek, getMalaysiaDateString } from "../utils";
+import { parseGTFSTime, getCurrentSeconds, formatTime, getMalaysiaDayOfWeek, getMalaysiaDateString, getDayOfWeekForDate, dateToGTFSDateString } from "../utils";
 import { getNetworkGraph } from "./graph";
 import { getGTFSData } from "../gtfs/cache";
 
@@ -164,7 +164,8 @@ function computeDepartures(
   firstLegRouteId: string,
   totalTravelSeconds: number,
   data: GTFSData,
-  requestedTimeSeconds: number
+  requestedTimeSeconds: number,
+  dateStr?: string
 ): JourneyRoute["departures"] {
   const departures: JourneyRoute["departures"] = [];
   const nowSeconds = requestedTimeSeconds;
@@ -177,9 +178,9 @@ function computeDepartures(
   const stopTimes = data.stopTimesByStop.get(originStopId);
   if (!stopTimes) return [];
 
-  // Get active services for today
-  const dayOfWeek = getMalaysiaDayOfWeek();
-  const today = getMalaysiaDateString();
+  // Get active services for the target date (or today)
+  const dayOfWeek = dateStr ? getDayOfWeekForDate(dateStr) : getMalaysiaDayOfWeek();
+  const today = dateStr ? dateToGTFSDateString(dateStr) : getMalaysiaDateString();
   const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
   const activeServices = new Set<string>();
@@ -240,7 +241,8 @@ function computeDepartures(
 export async function findJourneyRoute(
   fromStopId: string,
   toStopId: string,
-  timeSeconds?: number
+  timeSeconds?: number,
+  dateStr?: string
 ): Promise<JourneyRoute | null> {
   const data = await getGTFSData();
   const graph = getNetworkGraph(data);
@@ -263,7 +265,7 @@ export async function findJourneyRoute(
   const firstRailLeg = legs.find((l) => l.type === "rail");
   const requestTime = timeSeconds ?? getCurrentSeconds();
   const departures = firstRailLeg
-    ? computeDepartures(fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime)
+    ? computeDepartures(fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
     : [];
 
   return {

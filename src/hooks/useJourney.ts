@@ -5,11 +5,12 @@ import type { Arrival } from "@/lib/gtfs/types";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export function useJourney(from: string | null, to: string | null, time?: string) {
+export function useJourney(from: string | null, to: string | null, time?: string, date?: string) {
   const params = new URLSearchParams();
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (time) params.set("time", time);
+  if (date) params.set("date", date);
 
   const key = from ? `/api/journey?${params.toString()}` : null;
 

@@ -40,6 +40,17 @@ export function getCurrentSeconds(): number {
   return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
 }
 
+/** Get day-of-week (0=Sun..6=Sat) for a "YYYY-MM-DD" date string */
+export function getDayOfWeekForDate(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
+/** Convert "YYYY-MM-DD" to "YYYYMMDD" for GTFS calendar comparison */
+export function dateToGTFSDateString(dateStr: string): string {
+  return dateStr.replace(/-/g, "");
+}
+
 /** Format seconds since midnight to "HH:MM" */
 export function formatTime(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600) % 24;

@@ -10,6 +10,7 @@ export async function GET(request: Request) {
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
     const timeParam = url.searchParams.get("time"); // "HH:MM" format
+    const dateParam = url.searchParams.get("date"); // "YYYY-MM-DD" format
 
     if (!from) {
       return NextResponse.json({ error: "Missing 'from' parameter" }, { status: 400 });
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     // Mode 2: Journey planning
-    const journey = await findJourneyRoute(from, to, timeSeconds);
+    const journey = await findJourneyRoute(from, to, timeSeconds, dateParam || undefined);
     if (!journey) {
       return NextResponse.json({ mode: "journey", journey: null, error: "No route found" });
     }

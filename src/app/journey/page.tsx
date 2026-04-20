@@ -5,7 +5,7 @@ import { useJourney } from "@/hooks/useJourney";
 import { StationPicker } from "@/components/journey/StationPicker";
 import { JourneyResult } from "@/components/journey/JourneyResult";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ArrowUpDown, Navigation, MapPin } from "lucide-react";
+import { ArrowUpDown, Navigation, MapPin, Clock } from "lucide-react";
 
 type Station = { stopId: string; stopName: string; lineColor: string } | null;
 
@@ -16,16 +16,30 @@ function JourneyContent() {
   const [searched, setSearched] = useState(false);
   const [searchFrom, setSearchFrom] = useState<string | null>(null);
   const [searchTo, setSearchTo] = useState<string | null>(null);
+  const [departureMode, setDepartureMode] = useState<"now" | "custom">("now");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [searchTime, setSearchTime] = useState<string | undefined>(undefined);
+  const [searchDate, setSearchDate] = useState<string | undefined>(undefined);
 
-  const { data, isLoading, mutate } = useJourney(searchFrom, searchTo);
+  const { data, isLoading, mutate } = useJourney(searchFrom, searchTo, searchTime, searchDate);
 
   const handleSearch = () => {
     if (!from) return;
-    if (searchFrom === from.stopId && searchTo === (to?.stopId || null)) {
+    const newTime = departureMode === "custom" && selectedTime ? selectedTime : undefined;
+    const newDate = departureMode === "custom" && selectedDate ? selectedDate : undefined;
+    if (
+      searchFrom === from.stopId &&
+      searchTo === (to?.stopId || null) &&
+      searchTime === newTime &&
+      searchDate === newDate
+    ) {
       mutate();
     } else {
       setSearchFrom(from.stopId);
       setSearchTo(to?.stopId || null);
+      setSearchTime(newTime);
+      setSearchDate(newDate);
     }
     setSearched(true);
   };
@@ -80,6 +94,69 @@ function JourneyContent() {
         </div>
 
         <StationPicker label="To" lines={lines} value={to} onChange={setTo} />
+
+        {/* Departure time selector */}
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Depart at
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setDepartureMode("now")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                departureMode === "now"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              Now
+            </button>
+            <button
+              onClick={() => {
+                setDepartureMode("custom");
+                if (!selectedDate) {
+                  const now = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kuala_Lumpur" });
+                  setSelectedDate(now.split(",")[0].trim());
+                }
+                if (!selectedTime) {
+                  const now = new Date().toLocaleString("en-GB", {
+                    timeZone: "Asia/Kuala_Lumpur",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  });
+                  setSelectedTime(now);
+                }
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                departureMode === "custom"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              Choose time
+            </button>
+          </div>
+          {departureMode === "custom" && (
+            <div className="flex gap-2 mt-2">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white"
+              />
+              <input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white"
+              />
+            </div>
+          )}
+        </div>
 
         <button
           onClick={handleSearch}
