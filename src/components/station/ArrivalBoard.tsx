@@ -5,6 +5,8 @@ import { ArrivalSkeleton } from "../ui/Skeleton";
 import { useArrivals } from "@/hooks/useArrivals";
 import { RefreshCw, Clock } from "lucide-react";
 
+const COUNTDOWN_LIMIT = 5; // show countdown for first N trains
+
 export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: string }) {
   const { direction0, direction1, dir0Label, dir1Label, isLoading, refresh } = useArrivals(stopId);
   const [activeDir, setActiveDir] = useState(0);
@@ -15,6 +17,8 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
   }, [direction0, direction1, isLoading]);
 
   const arrivals = activeDir === 0 ? direction0 : direction1;
+  const label0 = dir0Label;
+  const label1 = dir1Label;
 
   return (
     <div>
@@ -40,7 +44,7 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
       </div>
 
       {/* Direction tabs */}
-      {(dir0Label || dir1Label) && (
+      {(label0 || label1) && (
         <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4">
           <button
             onClick={() => setActiveDir(0)}
@@ -50,7 +54,7 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            To {dir0Label}
+            To {label0}
           </button>
           <button
             onClick={() => setActiveDir(1)}
@@ -60,7 +64,7 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            To {dir1Label}
+            To {label1}
           </button>
         </div>
       )}
@@ -70,9 +74,30 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
         <ArrivalSkeleton />
       ) : arrivals.length > 0 ? (
         <div className="space-y-2">
-          {arrivals.map((a, i) => (
-            <ArrivalRow key={`${a.tripId}-${i}`} arrival={a} />
+          {/* First N with full countdown cards */}
+          {arrivals.slice(0, COUNTDOWN_LIMIT).map((a, i) => (
+            <ArrivalRow key={`${a.tripId}-${i}`} arrival={a} showCountdown />
           ))}
+
+          {/* Remaining as compact rows */}
+          {arrivals.length > COUNTDOWN_LIMIT && (
+            <>
+              <div className="flex items-center gap-2 mt-6 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Later
+                </span>
+                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  {arrivals.length - COUNTDOWN_LIMIT} more trains
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-1">
+                {arrivals.slice(COUNTDOWN_LIMIT).map((a, i) => (
+                  <ArrivalRow key={`${a.tripId}-later-${i}`} arrival={a} showCountdown={false} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="text-center py-12">

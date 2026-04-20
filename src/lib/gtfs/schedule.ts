@@ -1,5 +1,5 @@
 import { getGTFSData } from "./cache";
-import type { Arrival, CalendarEntry } from "./types";
+import type { Arrival, CalendarEntry, TimetableEntry, FullDaySchedule } from "./types";
 import { matchLineByRouteId } from "../lines";
 import {
   parseGTFSTime,
@@ -61,7 +61,8 @@ function computeArrivalsForServices(
   stopIds: string[],
   activeServices: Set<string>,
   nowSeconds: number,
-  isOvernight: boolean // if true, nowSeconds is shifted by +86400
+  isOvernight: boolean,
+  maxSeconds: number = 3600
 ): Arrival[] {
   const results: Arrival[] = [];
 
@@ -113,7 +114,7 @@ function computeArrivalsForServices(
             const diff = arrivalAtStop - nowSeconds;
 
             if (diff < -60) continue;
-            if (diff > 3600) continue;
+            if (diff > maxSeconds) continue;
 
             const minutesAway = Math.max(0, Math.round(diff / 60));
             let status: Arrival["status"] = "scheduled";
@@ -138,7 +139,7 @@ function computeArrivalsForServices(
       } else {
         const arrivalSeconds = parseGTFSTime(st.arrival_time);
         const diff = arrivalSeconds - nowSeconds;
-        if (diff < -60 || diff > 3600) continue;
+        if (diff < -60 || diff > maxSeconds) continue;
 
         const minutesAway = Math.max(0, Math.round(diff / 60));
         let status: Arrival["status"] = "scheduled";
@@ -195,7 +196,8 @@ function getDirectionLabels(
 
 export async function getNextArrivals(
   stopId: string,
-  limit = 5
+  limit = 5,
+  maxSeconds = 3600
 ): Promise<{
   direction0: Arrival[];
   direction1: Arrival[];
@@ -222,7 +224,7 @@ export async function getNextArrivals(
   const todayServices = getActiveServiceIdsForDay(data.calendar, todayDow, todayDate);
 
   let allArrivals = computeArrivalsForServices(
-    data, stopIds, todayServices, nowSeconds, false
+    data, stopIds, todayServices, nowSeconds, false, maxSeconds
   );
 
   // If it's early morning (before 4 AM), also check yesterday's late-night schedule
@@ -236,7 +238,7 @@ export async function getNextArrivals(
     // Shift nowSeconds by +86400 so it can compare against yesterday's GTFS times
     // e.g., 00:18 becomes 86400 + 1080 = 87480, which can match against arrival 88873
     const overnightArrivals = computeArrivalsForServices(
-      data, stopIds, yesterdayServices, nowSeconds + SECONDS_IN_DAY, true
+      data, stopIds, yesterdayServices, nowSeconds + SECONDS_IN_DAY, true, maxSeconds
     );
 
     allArrivals = [...allArrivals, ...overnightArrivals];
@@ -259,4 +261,118 @@ export async function getNextArrivals(
     dir0Label,
     dir1Label,
   };
+}
+
+// --- Full Day Timetable ---
+
+const fullDayCache = new Map<
+  string,
+  { date: string; result: FullDaySchedule }
+>();
+
+export async function getFullDaySchedule(
+  stopId: string
+): Promise<FullDaySchedule> {
+  const today = getMalaysiaDateString();
+  const cached = fullDayCache.get(stopId);
+  if (cached && cached.date === today) {
+    return cached.result;
+  }
+
+  const data = await getGTFSData();
+
+  const stopIds = [stopId];
+  for (const [sid, stop] of data.stops) {
+    if (stop.parent_station === stopId) stopIds.push(sid);
+  }
+
+  const { dir0Label, dir1Label } = getDirectionLabels(data, stopIds);
+
+  const todayDow = getMalaysiaDayOfWeek();
+  const activeServices = getActiveServiceIdsForDay(data.calendar, todayDow, today);
+
+  const direction0: TimetableEntry[] = [];
+  const direction1: TimetableEntry[] = [];
+
+  for (const sid of stopIds) {
+    const stopTimes = data.stopTimesByStop.get(sid);
+    if (!stopTimes) continue;
+
+    for (const st of stopTimes) {
+      const trip = data.trips.get(st.trip_id);
+      if (!trip) continue;
+      if (!activeServices.has(trip.service_id)) continue;
+
+      const line = matchLineByRouteId(trip.route_id);
+
+      let headsign = trip.trip_headsign || "";
+      if (!headsign) {
+        const tripStops = data.stopTimesByTrip.get(trip.trip_id);
+        if (tripStops && tripStops.length > 0) {
+          const lastStopId = tripStops[tripStops.length - 1].stop_id;
+          const lastStop = data.stops.get(lastStopId);
+          headsign = lastStop?.stop_name || "Unknown";
+        }
+      }
+      const toMatch = headsign.match(/to\s+(.+)$/i);
+      if (toMatch) headsign = toMatch[1];
+
+      const freqs = data.frequencies.get(trip.trip_id);
+
+      if (freqs && freqs.length > 0) {
+        const tripStops = data.stopTimesByTrip.get(trip.trip_id);
+        if (!tripStops || tripStops.length === 0) continue;
+
+        const tripStartSeconds = parseGTFSTime(tripStops[0].departure_time);
+        const stopArrivalSeconds = parseGTFSTime(st.arrival_time);
+        const offsetSeconds = stopArrivalSeconds - tripStartSeconds;
+
+        for (const freq of freqs) {
+          const windowStart = parseGTFSTime(freq.start_time);
+          const windowEnd = parseGTFSTime(freq.end_time);
+          const headway = freq.headway_secs;
+
+          for (
+            let departureTime = windowStart;
+            departureTime < windowEnd;
+            departureTime += headway
+          ) {
+            const arrivalAtStop = departureTime + offsetSeconds;
+
+            const entry: TimetableEntry = {
+              scheduledArrival: formatTime(arrivalAtStop % SECONDS_IN_DAY),
+              arrivalSeconds: arrivalAtStop % SECONDS_IN_DAY,
+              lineColor: line?.color || "#6B7280",
+              lineName: line?.name || trip.route_id,
+              headsign,
+              directionId: trip.direction_id,
+            };
+
+            if (trip.direction_id === 0) direction0.push(entry);
+            else direction1.push(entry);
+          }
+        }
+      } else {
+        const arrivalSeconds = parseGTFSTime(st.arrival_time);
+        const entry: TimetableEntry = {
+          scheduledArrival: formatTime(arrivalSeconds % SECONDS_IN_DAY),
+          arrivalSeconds: arrivalSeconds % SECONDS_IN_DAY,
+          lineColor: line?.color || "#6B7280",
+          lineName: line?.name || trip.route_id,
+          headsign,
+          directionId: trip.direction_id,
+        };
+
+        if (trip.direction_id === 0) direction0.push(entry);
+        else direction1.push(entry);
+      }
+    }
+  }
+
+  direction0.sort((a, b) => a.arrivalSeconds - b.arrivalSeconds);
+  direction1.sort((a, b) => a.arrivalSeconds - b.arrivalSeconds);
+
+  const result: FullDaySchedule = { direction0, direction1, dir0Label, dir1Label };
+  fullDayCache.set(stopId, { date: today, result });
+  return result;
 }

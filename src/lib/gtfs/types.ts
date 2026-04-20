@@ -85,3 +85,19 @@ export interface LineInfo {
   stationCount: number;
   stations: { stopId: string; stopName: string }[];
 }
+
+export interface TimetableEntry {
+  scheduledArrival: string; // "HH:MM"
+  arrivalSeconds: number;
+  lineColor: string;
+  lineName: string;
+  headsign: string;
+  directionId: number;
+}
+
+export interface FullDaySchedule {
+  direction0: TimetableEntry[];
+  direction1: TimetableEntry[];
+  dir0Label: string;
+  dir1Label: string;
+}
