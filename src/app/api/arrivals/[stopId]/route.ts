@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNextArrivals, getFullDaySchedule } from "@/lib/gtfs/schedule";
 
-const REST_OF_DAY = 24 * 3600; // enough to cover until end of service
+const REST_OF_DAY = 36 * 3600; // 36 hours — covers overnight trains past midnight
 
 export async function GET(
   request: Request,

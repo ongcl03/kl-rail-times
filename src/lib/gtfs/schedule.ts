@@ -5,6 +5,7 @@ import {
   parseGTFSTime,
   getCurrentSeconds,
   formatTime,
+  getMalaysiaTime,
   getMalaysiaDayOfWeek,
   getMalaysiaDateString,
 } from "../utils";
@@ -41,17 +42,15 @@ function getActiveServiceIdsForDay(
   return active;
 }
 
-/** Get yesterday's day-of-week and date string */
+/** Get yesterday's day-of-week and date string in Malaysia timezone */
 function getYesterdayInfo(): { dayOfWeek: number; dateString: string } {
-  const now = new Date();
+  const now = getMalaysiaTime();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const str = yesterday.toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" });
-  const d = new Date(str);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const y = yesterday.getFullYear();
+  const m = String(yesterday.getMonth() + 1).padStart(2, "0");
+  const day = String(yesterday.getDate()).padStart(2, "0");
   return {
-    dayOfWeek: d.getDay(),
+    dayOfWeek: yesterday.getDay(),
     dateString: `${y}${m}${day}`,
   };
 }
