@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { findJourneyRoute } from "@/lib/journey/pathfinder";
+import { fetchFare } from "@/lib/journey/fare";
 import { getNextArrivals } from "@/lib/gtfs/schedule";
 import { parseGTFSTime } from "@/lib/utils";
 
@@ -26,6 +27,17 @@ export async function GET(request: Request) {
     const journey = await findJourneyRoute(from, to, timeSeconds);
     if (!journey) {
       return NextResponse.json({ mode: "journey", journey: null, error: "No route found" });
+    }
+
+    // Fetch fare for the overall journey (first rail origin → last rail destination)
+    const railLegs = journey.legs.filter((l) => l.type === "rail");
+    if (railLegs.length > 0) {
+      const fareFrom = railLegs[0].fromStopId;
+      const fareTo = railLegs[railLegs.length - 1].toStopId;
+      const fare = await fetchFare(fareFrom, fareTo);
+      if (fare) {
+        journey.fare = fare;
+      }
     }
 
     return NextResponse.json({ mode: "journey", journey });

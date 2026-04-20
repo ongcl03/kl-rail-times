@@ -45,15 +45,31 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
       {/* Summary bar */}
       <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
         <div className="flex-1">
-          <div className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white">
-            <Clock className="w-5 h-5 text-slate-400" />
-            {formatDuration(journey.totalSeconds)}
+          {selectedDep && (
+            <div className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white font-mono">
+              {selectedDep.time}
+              <ArrowRight className="w-5 h-5 text-slate-400" />
+              {selectedDep.arrivalTime}
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{formatDuration(journey.totalSeconds)}</span>
+            <span>·</span>
+            <span>
+              {journey.transfers === 0
+                ? "Direct — no transfers"
+                : `${journey.transfers} transfer${journey.transfers > 1 ? "s" : ""}`}
+            </span>
+            {journey.fare && (
+              <>
+                <span>·</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  RM {journey.fare.cashless}
+                </span>
+              </>
+            )}
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {journey.transfers === 0
-              ? "Direct — no transfers"
-              : `${journey.transfers} transfer${journey.transfers > 1 ? "s" : ""}`}
-          </p>
         </div>
         <div className="flex items-center gap-0.5">
           {journey.legs
@@ -75,6 +91,23 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
             ))}
         </div>
       </div>
+
+      {/* Fare breakdown */}
+      {journey.fare && (
+        <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 px-1">
+          <span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cashless}</span> cashless
+          </span>
+          <span>·</span>
+          <span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cash}</span> cash
+          </span>
+          <span>·</span>
+          <span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.concession}</span> concession
+          </span>
+        </div>
+      )}
 
       {/* Legs (always visible, times update when departure is selected) */}
       <div className="space-y-0">

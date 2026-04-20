@@ -22,10 +22,17 @@ export interface JourneyLeg {
   direction?: string; // "Toward Gombak", "Toward Putra Heights", etc.
 }
 
+export interface JourneyFare {
+  cash: string;
+  cashless: string;
+  concession: string;
+}
+
 export interface JourneyRoute {
   legs: JourneyLeg[];
   totalSeconds: number;
   transfers: number;
+  fare?: JourneyFare;
   departures: {
     time: string;
     minutesAway: number;
