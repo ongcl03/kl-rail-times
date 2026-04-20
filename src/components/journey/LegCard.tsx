@@ -13,22 +13,33 @@ export function LegCard({
   leg,
   isFirst,
   isLast,
+  departTime,
+  arriveTime,
 }: {
   leg: JourneyLeg;
   isFirst: boolean;
   isLast: boolean;
+  departTime?: string;
+  arriveTime?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   if (leg.type === "transfer") {
     return (
-      <div className="flex items-center gap-3 py-3 px-4">
-        <div className="w-8 flex justify-center">
-          <Footprints className="w-4 h-4 text-slate-400" />
+      <div className="flex items-center justify-between py-3 px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 flex justify-center">
+            <Footprints className="w-4 h-4 text-slate-400" />
+          </div>
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            Walk {formatDuration(leg.travelSeconds)} to change line
+          </span>
         </div>
-        <span className="text-sm text-slate-500 dark:text-slate-400">
-          Walk {formatDuration(leg.travelSeconds)} to change line
-        </span>
+        {departTime && arriveTime && (
+          <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+            {departTime} → {arriveTime}
+          </span>
+        )}
       </div>
     );
   }
@@ -51,14 +62,21 @@ export function LegCard({
         </div>
 
         {/* From station */}
-        <div className="flex items-center gap-2 mb-1">
-          <div
-            className="absolute left-[15px] w-[13px] h-[13px] rounded-full border-2 bg-white dark:bg-slate-900"
-            style={{ borderColor: leg.lineColor, backgroundColor: isFirst ? leg.lineColor : undefined }}
-          />
-          <span className={`text-sm ${isFirst ? "font-semibold text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
-            {leg.fromStopName}
-          </span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div
+              className="absolute left-[15px] w-[13px] h-[13px] rounded-full border-2 bg-white dark:bg-slate-900"
+              style={{ borderColor: leg.lineColor, backgroundColor: isFirst ? leg.lineColor : undefined }}
+            />
+            <span className={`text-sm ${isFirst ? "font-semibold text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
+              {leg.fromStopName}
+            </span>
+          </div>
+          {departTime && (
+            <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
+              {departTime}
+            </span>
+          )}
         </div>
 
         {/* Intermediate stops (collapsible) */}
@@ -80,14 +98,21 @@ export function LegCard({
         )}
 
         {/* To station */}
-        <div className="flex items-center gap-2 mt-1">
-          <div
-            className="absolute left-[15px] w-[13px] h-[13px] rounded-full border-2 bg-white dark:bg-slate-900"
-            style={{ borderColor: leg.lineColor, backgroundColor: isLast ? leg.lineColor : undefined }}
-          />
-          <span className={`text-sm ${isLast ? "font-semibold text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
-            {leg.toStopName}
-          </span>
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-2">
+            <div
+              className="absolute left-[15px] w-[13px] h-[13px] rounded-full border-2 bg-white dark:bg-slate-900"
+              style={{ borderColor: leg.lineColor, backgroundColor: isLast ? leg.lineColor : undefined }}
+            />
+            <span className={`text-sm ${isLast ? "font-semibold text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
+              {leg.toStopName}
+            </span>
+          </div>
+          {arriveTime && (
+            <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
+              {arriveTime}
+            </span>
+          )}
         </div>
       </div>
     </div>

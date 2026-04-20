@@ -10,7 +10,32 @@ function formatDuration(seconds: number): string {
   return `${m} min`;
 }
 
+function formatTimeFromSeconds(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600) % 24;
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function parseTimeToSeconds(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 3600 + m * 60;
+}
+
 export function JourneyResult({ journey }: { journey: JourneyRoute }) {
+  // Compute per-leg departure/arrival times from first departure
+  const firstDep = journey.departures[0];
+  const legTimes: { departTime: string; arriveTime: string }[] = [];
+
+  if (firstDep) {
+    let currentSeconds = parseTimeToSeconds(firstDep.time);
+    for (const leg of journey.legs) {
+      const departTime = formatTimeFromSeconds(currentSeconds);
+      currentSeconds += leg.travelSeconds;
+      const arriveTime = formatTimeFromSeconds(currentSeconds);
+      legTimes.push({ departTime, arriveTime });
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary bar */}
@@ -53,7 +78,14 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
       {/* Legs */}
       <div className="space-y-0">
         {journey.legs.map((leg, i) => (
-          <LegCard key={i} leg={leg} isFirst={i === 0} isLast={i === journey.legs.length - 1} />
+          <LegCard
+            key={i}
+            leg={leg}
+            isFirst={i === 0}
+            isLast={i === journey.legs.length - 1}
+            departTime={legTimes[i]?.departTime}
+            arriveTime={legTimes[i]?.arriveTime}
+          />
         ))}
       </div>
 
