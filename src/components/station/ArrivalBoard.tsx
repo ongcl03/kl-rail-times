@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { ArrivalRow } from "./ArrivalRow";
 import { ArrivalSkeleton } from "../ui/Skeleton";
 import { useArrivals } from "@/hooks/useArrivals";
-import { RefreshCw, Clock } from "lucide-react";
+import { RefreshCw, Clock, Calendar } from "lucide-react";
+import Link from "next/link";
 
 const COUNTDOWN_LIMIT = 5; // show countdown for first N trains
 
@@ -79,10 +80,17 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
             <ArrivalRow key={`${a.tripId}-${i}`} arrival={a} showCountdown />
           ))}
 
-          {/* Remaining as compact rows */}
+          {/* Full timetable link + remaining trains */}
           {arrivals.length > COUNTDOWN_LIMIT && (
             <>
-              <div className="flex items-center gap-2 mt-6 mb-3">
+              <Link
+                href={`/station/${stopId}/timetable`}
+                className="flex items-center justify-center gap-2 py-2.5 mt-4 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950 transition-all"
+              >
+                <Calendar className="w-4 h-4" />
+                View full day timetable
+              </Link>
+              <div className="flex items-center gap-2 mt-4 mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Later
                 </span>
