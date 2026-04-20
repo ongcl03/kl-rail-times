@@ -13,7 +13,7 @@ export function useJourney(from: string | null, to: string | null, time?: string
 
   const key = from ? `/api/journey?${params.toString()}` : null;
 
-  const { data, error, isLoading } = useSWR<{
+  const { data, error, isLoading, mutate } = useSWR<{
     mode: "schedule" | "journey";
     journey?: JourneyRoute | null;
     direction0?: Arrival[];
@@ -25,5 +25,5 @@ export function useJourney(from: string | null, to: string | null, time?: string
     revalidateOnFocus: false,
   });
 
-  return { data, error, isLoading };
+  return { data, error, isLoading, mutate };
 }

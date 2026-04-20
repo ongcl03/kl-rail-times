@@ -17,12 +17,16 @@ function JourneyContent() {
   const [searchFrom, setSearchFrom] = useState<string | null>(null);
   const [searchTo, setSearchTo] = useState<string | null>(null);
 
-  const { data, isLoading } = useJourney(searchFrom, searchTo);
+  const { data, isLoading, mutate } = useJourney(searchFrom, searchTo);
 
   const handleSearch = () => {
     if (!from) return;
-    setSearchFrom(from.stopId);
-    setSearchTo(to?.stopId || null);
+    if (searchFrom === from.stopId && searchTo === (to?.stopId || null)) {
+      mutate();
+    } else {
+      setSearchFrom(from.stopId);
+      setSearchTo(to?.stopId || null);
+    }
     setSearched(true);
   };
 
