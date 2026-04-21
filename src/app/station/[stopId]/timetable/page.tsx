@@ -174,10 +174,23 @@ function TimetableContent() {
 
         {/* Summary */}
         {!isLoading && entries.length > 0 && (
-          <div className="flex items-center gap-4 mb-6 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-6 text-sm text-slate-500 dark:text-slate-400">
             <span>{entries.length} trains</span>
             <span>First: {entries[0].scheduledArrival}</span>
             <span>Last: {entries[entries.length - 1].scheduledArrival}</span>
+            {(() => {
+              const CUTOFF = 4 * 3600; // 4 AM in seconds
+              const morning = entries.find((e) => e.arrivalSeconds >= CUTOFF);
+              const lastService = [...entries].reverse().find((e) => e.arrivalSeconds < CUTOFF) || entries[entries.length - 1];
+              if (morning) {
+                return (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    Service: {morning.scheduledArrival} – {lastService.scheduledArrival}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
 
