@@ -59,78 +59,106 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
   return (
     <div className="space-y-6">
       {/* Summary bar */}
-      <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-        <div className="flex items-center gap-4">
-        <div className="flex-1">
-          {selectedDep && (
-            <div className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white font-mono">
-              {selectedDep.time}
-              <ArrowRight className="w-5 h-5 text-slate-400" />
-              {selectedDep.arrivalTime}
+      <div className="px-4 py-4 sm:p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+        {/* Top row: times + line badges (desktop side-by-side) */}
+        <div className="flex items-start sm:items-center gap-4">
+          <div className="min-w-0 flex-1">
+            {selectedDep && (
+              <div className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white font-mono">
+                {selectedDep.time}
+                <ArrowRight className="w-5 h-5 text-slate-400" />
+                {selectedDep.arrivalTime}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{formatDuration(journey.totalSeconds)}</span>
+              <span>·</span>
+              <span>
+                {journey.transfers === 0
+                  ? "Direct — no transfers"
+                  : `${journey.transfers} transfer${journey.transfers > 1 ? "s" : ""}`}
+              </span>
+              {journey.fare && (
+                <>
+                  <span>·</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    RM {journey.fare.cashless}
+                  </span>
+                </>
+              )}
             </div>
-          )}
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{formatDuration(journey.totalSeconds)}</span>
-            <span>·</span>
-            <span>
-              {journey.transfers === 0
-                ? "Direct — no transfers"
-                : `${journey.transfers} transfer${journey.transfers > 1 ? "s" : ""}`}
-            </span>
-            {journey.fare && (
-              <>
-                <span>·</span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                  RM {journey.fare.cashless}
-                </span>
-              </>
+          </div>
+          {/* Desktop: line badges + map icon inline */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1">
+              {journey.legs
+                .filter((l) => l.type === "rail")
+                .map((leg, i) => (
+                  <div key={i} className="flex items-center gap-1">
+                    {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 mx-0.5" />}
+                    <div
+                      className="h-3 rounded-full"
+                      style={{
+                        backgroundColor: leg.lineColor,
+                        width: `${Math.max(28, Math.min(80, leg.travelSeconds / 10))}px`,
+                      }}
+                    />
+                    <span className="text-[10px] font-bold" style={{ color: leg.lineColor }}>
+                      {leg.lineShortName}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            {mapUrl && (
+              <Link
+                href={mapUrl}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                title="View on map"
+              >
+                <MapPin className="w-4 h-4" />
+              </Link>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-0.5">
-          {journey.legs
-            .filter((l) => l.type === "rail")
-            .map((leg, i) => (
-              <div key={i} className="flex items-center gap-0.5">
-                {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 mx-1" />}
-                <div
-                  className="h-3 rounded-full"
-                  style={{
-                    backgroundColor: leg.lineColor,
-                    width: `${Math.max(24, Math.min(80, leg.travelSeconds / 10))}px`,
-                  }}
-                />
-                <span className="text-[10px] font-bold" style={{ color: leg.lineColor }}>
+
+        {/* Mobile: full-width line visualization */}
+        <div className="flex sm:hidden items-center gap-1 mt-3">
+          {(() => {
+            const railLegs = journey.legs.filter((l) => l.type === "rail");
+            const totalTravel = railLegs.reduce((s, l) => s + l.travelSeconds, 0);
+            return railLegs.map((leg, i) => (
+              <div key={i} className="flex items-center gap-1" style={{ flex: leg.travelSeconds / totalTravel }}>
+                {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 shrink-0" />}
+                <div className="h-2.5 rounded-full flex-1 min-w-3" style={{ backgroundColor: leg.lineColor }} />
+                <span className="text-[10px] font-bold leading-none shrink-0" style={{ color: leg.lineColor }}>
                   {leg.lineShortName}
                 </span>
               </div>
-            ))}
-          </div>
+            ));
+          })()}
           {mapUrl && (
             <Link
               href={mapUrl}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+              className="p-1 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 shrink-0 ml-0.5"
               title="View on map"
             >
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-3.5 h-3.5" />
             </Link>
           )}
         </div>
-        </div>
         {journey.fare && (
-          <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 pt-3 mt-3 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500 mt-3 pt-3 border-t border-slate-100/80 dark:border-slate-700/60">
             <span>
-              <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cashless}</span> cashless
+              <span className="font-medium text-slate-500 dark:text-slate-400">RM {journey.fare.cashless}</span> cashless
             </span>
-            <span>·</span>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
             <span>
-              <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.cash}</span> cash
+              <span className="font-medium text-slate-500 dark:text-slate-400">RM {journey.fare.cash}</span> cash
             </span>
-            <span>·</span>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
             <span>
-              <span className="font-medium text-slate-600 dark:text-slate-300">RM {journey.fare.concession}</span> concession
+              <span className="font-medium text-slate-500 dark:text-slate-400">RM {journey.fare.concession}</span> concession
             </span>
           </div>
         )}
