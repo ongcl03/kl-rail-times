@@ -17,6 +17,7 @@ function JourneyContent() {
   const { lines, isLoading: linesLoading } = useLines();
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
   const { favoriteJourneys, isJourneyFavorite, toggleJourney, isLoaded: favsLoaded } = useFavorites();
   const [from, setFrom] = useState<Station>(null);
   const [to, setTo] = useState<Station>(null);
@@ -31,17 +32,25 @@ function JourneyContent() {
 
   const { data, isLoading, mutate } = useJourney(searchFrom, searchTo, searchTime, searchDate);
 
-  // Pre-fill "from" station from URL param (e.g., /journey?from=SP16)
+  // Pre-fill stations from URL params (e.g., /journey?from=SP16&to=PY23)
   useEffect(() => {
-    if (!fromParam || from || lines.length === 0) return;
-    for (const line of lines) {
-      const station = line.stations.find((s) => s.stopId === fromParam);
-      if (station) {
-        setFrom({ stopId: station.stopId, stopName: station.stopName, lineColor: line.color });
-        break;
+    if (lines.length === 0) return;
+    const findStation = (stopId: string): Station => {
+      for (const line of lines) {
+        const station = line.stations.find((s) => s.stopId === stopId);
+        if (station) return { stopId: station.stopId, stopName: station.stopName, lineColor: line.color };
       }
+      return null;
+    };
+    if (fromParam && !from) {
+      const s = findStation(fromParam);
+      if (s) setFrom(s);
     }
-  }, [fromParam, lines, from]);
+    if (toParam && !to) {
+      const s = findStation(toParam);
+      if (s) setTo(s);
+    }
+  }, [fromParam, toParam, lines, from, to]);
 
   const handleSearch = () => {
     if (!from) return;
