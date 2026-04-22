@@ -39,6 +39,23 @@ export function Countdown({ arrivalSeconds, status }: { arrivalSeconds: number; 
     );
   }
 
+  if (mins >= 60) {
+    const hours = Math.floor(mins / 60);
+    const remainMins = mins % 60;
+    return (
+      <div className="text-right">
+        <span className="text-2xl font-bold text-slate-900 dark:text-white">{hours}</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">hr</span>
+        {remainMins > 0 && (
+          <>
+            <span className="text-lg font-semibold text-slate-700 dark:text-slate-300 ml-1">{remainMins}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 ml-0.5">min</span>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="text-right">
       <span className="text-2xl font-bold text-slate-900 dark:text-white">{mins}</span>
