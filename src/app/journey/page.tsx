@@ -1,5 +1,6 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLines } from "@/hooks/useLines";
 import { useJourney } from "@/hooks/useJourney";
 import { StationPicker } from "@/components/journey/StationPicker";
@@ -14,6 +15,8 @@ type Station = { stopId: string; stopName: string; lineColor: string } | null;
 
 function JourneyContent() {
   const { lines, isLoading: linesLoading } = useLines();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
   const { favoriteJourneys, isJourneyFavorite, toggleJourney, isLoaded: favsLoaded } = useFavorites();
   const [from, setFrom] = useState<Station>(null);
   const [to, setTo] = useState<Station>(null);
@@ -27,6 +30,18 @@ function JourneyContent() {
   const [searchDate, setSearchDate] = useState<string | undefined>(undefined);
 
   const { data, isLoading, mutate } = useJourney(searchFrom, searchTo, searchTime, searchDate);
+
+  // Pre-fill "from" station from URL param (e.g., /journey?from=SP16)
+  useEffect(() => {
+    if (!fromParam || from || lines.length === 0) return;
+    for (const line of lines) {
+      const station = line.stations.find((s) => s.stopId === fromParam);
+      if (station) {
+        setFrom({ stopId: station.stopId, stopName: station.stopName, lineColor: line.color });
+        break;
+      }
+    }
+  }, [fromParam, lines, from]);
 
   const handleSearch = () => {
     if (!from) return;

@@ -6,6 +6,8 @@ import { BackButton } from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { FavoriteStationButton } from "@/components/station/FavoriteStationButton";
+import Link from "next/link";
+import { Navigation } from "lucide-react";
 
 export default function StationPage() {
   const { stopId } = useParams<{ stopId: string }>();
@@ -72,7 +74,16 @@ export default function StationPage() {
                   {stationName}
                 </h1>
               </div>
-              <FavoriteStationButton stopId={stopId} stopName={stationName} lineColor={primaryColor} />
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/journey?from=${stopId}`}
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950 transition-all"
+                  title="Plan journey from here"
+                >
+                  <Navigation className="w-5 h-5" />
+                </Link>
+                <FavoriteStationButton stopId={stopId} stopName={stationName} lineColor={primaryColor} />
+              </div>
             </div>
           </div>
         </div>
