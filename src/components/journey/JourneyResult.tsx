@@ -69,8 +69,8 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Route selector */}
-      {journeys.length > 1 && (
+      {/* Route selector (hidden when no departures) */}
+      {journeys.length > 1 && journey.departures.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-2.5">
             <Route className="w-3.5 h-3.5 text-slate-400" />
@@ -141,8 +141,8 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
         </div>
       )}
 
-      {/* Summary bar */}
-      <div className="px-4 py-4 sm:p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+      {/* Summary bar (hidden when no departures) */}
+      {journey.departures.length > 0 && <div className="px-4 py-4 sm:p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
         {/* Top row: times + line badges */}
         <div className="flex items-start sm:items-center gap-4">
           <div className="min-w-0 flex-1">
@@ -251,7 +251,7 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
             </span>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Legs */}
       {journey.departures.length > 0 && (
