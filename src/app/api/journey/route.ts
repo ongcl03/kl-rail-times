@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findJourneyRoute } from "@/lib/journey/pathfinder";
+import { findAlternativeRoutes } from "@/lib/journey/pathfinder";
 import { fetchFare } from "@/lib/journey/fare";
 import { getNextArrivals } from "@/lib/gtfs/schedule";
 import { parseGTFSTime } from "@/lib/utils";
@@ -24,24 +24,26 @@ export async function GET(request: Request) {
       return NextResponse.json({ mode: "schedule", ...arrivals });
     }
 
-    // Mode 2: Journey planning
-    const journey = await findJourneyRoute(from, to, timeSeconds, dateParam || undefined);
-    if (!journey) {
-      return NextResponse.json({ mode: "journey", journey: null, error: "No route found" });
+    // Mode 2: Journey planning (with alternatives)
+    const journeys = await findAlternativeRoutes(from, to, timeSeconds, dateParam || undefined);
+    if (journeys.length === 0) {
+      return NextResponse.json({ mode: "journey", journeys: [], error: "No route found" });
     }
 
-    // Fetch fare for the overall journey (first rail origin → last rail destination)
-    const railLegs = journey.legs.filter((l) => l.type === "rail");
-    if (railLegs.length > 0) {
-      const fareFrom = railLegs[0].fromStopId;
-      const fareTo = railLegs[railLegs.length - 1].toStopId;
-      const fare = await fetchFare(fareFrom, fareTo);
-      if (fare) {
-        journey.fare = fare;
-      }
-    }
+    // Fetch fare for each route
+    await Promise.all(
+      journeys.map(async (journey) => {
+        const railLegs = journey.legs.filter((l) => l.type === "rail");
+        if (railLegs.length > 0) {
+          const fareFrom = railLegs[0].fromStopId;
+          const fareTo = railLegs[railLegs.length - 1].toStopId;
+          const fare = await fetchFare(fareFrom, fareTo);
+          if (fare) journey.fare = fare;
+        }
+      })
+    );
 
-    return NextResponse.json({ mode: "journey", journey });
+    return NextResponse.json({ mode: "journey", journeys });
   } catch (error) {
     console.error("[API] journey error:", error);
     return NextResponse.json({ error: "Failed to plan journey" }, { status: 500 });

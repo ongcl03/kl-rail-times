@@ -227,9 +227,9 @@ function JourneyContent() {
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-20 w-full" />
             </div>
-          ) : data?.mode === "journey" && data.journey ? (
-            <JourneyResult journey={data.journey} />
-          ) : data?.mode === "journey" && !data.journey ? (
+          ) : data?.mode === "journey" && data.journeys && data.journeys.length > 0 ? (
+            <JourneyResult journeys={data.journeys} />
+          ) : data?.mode === "journey" && (!data.journeys || data.journeys.length === 0) ? (
             <div className="text-center py-12">
               <MapPin className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
               <p className="text-slate-500 dark:text-slate-400 font-medium">

@@ -2,7 +2,15 @@
 import { useState } from "react";
 import type { JourneyRoute } from "@/lib/journey/types";
 import { LegCard } from "./LegCard";
-import { Clock, ArrowRight, RefreshCw, MapPin } from "lucide-react";
+import { Clock, ArrowRight, RefreshCw, MapPin, Route } from "lucide-react";
+
+function titleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 import Link from "next/link";
 
 function formatDuration(seconds: number): string {
@@ -35,8 +43,12 @@ function computeLegTimes(journey: JourneyRoute, departureTime: string) {
   return times;
 }
 
-export function JourneyResult({ journey }: { journey: JourneyRoute }) {
+export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [selectedDepIndex, setSelectedDepIndex] = useState(0);
+
+  const journey = journeys[selectedRouteIndex] || journeys[0];
+  if (!journey) return null;
 
   const selectedDep = journey.departures[selectedDepIndex] || journey.departures[0];
   const legTimes = selectedDep ? computeLegTimes(journey, selectedDep.time) : [];
@@ -44,7 +56,6 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
   const fromStopId = journey.legs[0]?.fromStopId;
   const toStopId = journey.legs[journey.legs.length - 1]?.toStopId;
 
-  // Build map URL with leg info: leg=fromStop,toStop,lineShortName for each rail leg
   const mapUrl = (() => {
     if (!fromStopId || !toStopId) return "";
     const params = new URLSearchParams();
@@ -57,10 +68,82 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
   })();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Route selector */}
+      {journeys.length > 1 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2.5">
+            <Route className="w-3.5 h-3.5 text-slate-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {journeys.length} Routes
+            </h3>
+          </div>
+          <div className="space-y-1.5">
+          {journeys.map((j, i) => {
+            const railLegs = j.legs.filter((l) => l.type === "rail");
+            const transferLeg = j.legs.find((l) => l.type === "transfer");
+            const isSelected = i === selectedRouteIndex;
+            const viaStation = transferLeg ? titleCase(transferLeg.fromStopName) : null;
+            const stopCount = railLegs.reduce((s, l) => s + l.intermediateStops.length + 2, 0) - (railLegs.length - 1);
+
+            return (
+              <button
+                key={i}
+                onClick={() => { setSelectedRouteIndex(i); setSelectedDepIndex(0); }}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg transition-all text-left ${
+                  isSelected
+                    ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
+                    : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[15px] font-medium truncate leading-snug tracking-wide ${
+                    isSelected ? "text-blue-800 dark:text-blue-200" : "text-slate-700 dark:text-slate-300"
+                  }`}>
+                    {viaStation ? `via ${viaStation}` : "Direct"}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={`text-[12px] tracking-wide shrink-0 min-w-[110px] ${
+                      isSelected ? "text-slate-500 dark:text-slate-400" : "text-slate-500 dark:text-slate-400"
+                    }`}>
+                      {stopCount} stops  ·  {j.distanceKm ?? "?"} km
+                    </span>
+                    <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {railLegs.map((leg, li) => (
+                        <div key={li} className="flex items-center gap-1">
+                          {li > 0 && <span className="text-[12px] font-medium text-slate-400 dark:text-slate-500">→</span>}
+                          <span
+                            className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white"
+                            style={{ backgroundColor: leg.lineColor }}
+                          >
+                            {leg.lineShortName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className={`text-[15px] font-semibold tabular-nums ${
+                    isSelected ? "text-blue-800 dark:text-blue-200" : "text-slate-600 dark:text-slate-400"
+                  }`}>
+                    {formatDuration(j.totalSeconds)}
+                  </span>
+                  {i === 0 && (
+                    <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Fastest</p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+          </div>
+        </div>
+      )}
+
       {/* Summary bar */}
       <div className="px-4 py-4 sm:p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-        {/* Top row: times + line badges (desktop side-by-side) */}
+        {/* Top row: times + line badges */}
         <div className="flex items-start sm:items-center gap-4">
           <div className="min-w-0 flex-1">
             {selectedDep && (
@@ -95,7 +178,7 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
               )}
             </div>
           </div>
-          {/* Desktop: line badges + map icon inline */}
+          {/* Desktop: line badges + map icon */}
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-1">
               {journey.legs

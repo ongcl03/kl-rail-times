@@ -68,7 +68,8 @@ interface DijkstraNode {
 function dijkstra(
   graph: NetworkGraph,
   fromStopId: string,
-  toStopId: string
+  toStopId: string,
+  edgePenalties?: Map<string, number>
 ): DijkstraNode | null {
   const visited = new Set<string>();
   // Simple priority queue (sorted insert) — fine for ~200 nodes
@@ -93,7 +94,8 @@ function dijkstra(
       if (visited.has(edge.toStopId)) continue;
 
       const penalty = edge.type === "transfer" ? TRANSFER_PENALTY : 0;
-      const newCost = current.cost + edge.travelSeconds + penalty;
+      const extraPenalty = edgePenalties?.get(`${current.stopId}->${edge.toStopId}`) ?? 0;
+      const newCost = current.cost + edge.travelSeconds + penalty + extraPenalty;
 
       queue.push({
         stopId: edge.toStopId,
@@ -302,32 +304,104 @@ export async function findJourneyRoute(
   const result = dijkstra(graph, fromStopId, toStopId);
   if (!result) return null;
 
-  const legs = buildLegs(result.path, data);
+  return buildJourneyFromPath(result.path, fromStopId, data, timeSeconds, dateStr);
+}
 
-  // Count transfers (transitions between different rail legs)
+/** Build a JourneyRoute from a raw Dijkstra path */
+function buildJourneyFromPath(
+  path: DijkstraNode["path"],
+  fromStopId: string,
+  data: GTFSData,
+  timeSeconds?: number,
+  dateStr?: string
+): JourneyRoute {
+  const legs = buildLegs(path, data);
+
   let transfers = 0;
   for (const leg of legs) {
     if (leg.type === "transfer") transfers++;
   }
 
-  // Compute actual travel time (without penalties)
   const totalSeconds = legs.reduce((sum, leg) => sum + leg.travelSeconds, 0);
 
-  // Find next departures
   const firstRailLeg = legs.find((l) => l.type === "rail");
   const requestTime = timeSeconds ?? getCurrentSeconds();
   const departures = firstRailLeg
     ? computeDepartures(fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
     : [];
 
-  // Compute track distance
   const distanceKm = Math.round(legs.reduce((sum, leg) => sum + legDistanceKm(leg, data), 0) * 100) / 100;
 
-  return {
-    legs,
-    totalSeconds,
-    transfers,
-    distanceKm,
-    departures,
-  };
+  return { legs, totalSeconds, transfers, distanceKm, departures };
+}
+
+/** Get a string signature representing the line sequence (for deduplication) */
+function getRouteSignature(path: DijkstraNode["path"]): string {
+  const segments: string[] = [];
+  let currentRoute = "";
+  for (const step of path) {
+    if (step.type === "rail" && step.routeId !== currentRoute) {
+      segments.push(step.routeId);
+      currentRoute = step.routeId;
+    } else if (step.type === "transfer") {
+      segments.push(`xfer:${step.fromStopId}-${step.toStopId}`);
+      currentRoute = "";
+    }
+  }
+  return segments.join("|");
+}
+
+/** Build edge penalties from a Dijkstra path to encourage alternative routes */
+function buildPenalties(
+  path: DijkstraNode["path"],
+  existing: Map<string, number>
+): Map<string, number> {
+  const penalties = new Map(existing);
+  for (const step of path) {
+    const key = `${step.fromStopId}->${step.toStopId}`;
+    const reverseKey = `${step.toStopId}->${step.fromStopId}`;
+    // Heavy penalty on transfers (forces different interchange points)
+    // Moderate penalty on rail edges (allows same line but discourages identical segments)
+    const amount = step.type === "transfer" ? 9999 : 600;
+    penalties.set(key, (penalties.get(key) ?? 0) + amount);
+    penalties.set(reverseKey, (penalties.get(reverseKey) ?? 0) + amount);
+  }
+  return penalties;
+}
+
+/** Find up to maxRoutes alternative journey routes */
+export async function findAlternativeRoutes(
+  fromStopId: string,
+  toStopId: string,
+  timeSeconds?: number,
+  dateStr?: string,
+  maxRoutes = 3
+): Promise<JourneyRoute[]> {
+  const data = await getGTFSData();
+  const graph = getNetworkGraph(data);
+
+  const routes: JourneyRoute[] = [];
+  const seenSignatures = new Set<string>();
+  let penalties = new Map<string, number>();
+
+  for (let attempt = 0; attempt < maxRoutes + 3; attempt++) {
+    const result = dijkstra(graph, fromStopId, toStopId, penalties.size > 0 ? penalties : undefined);
+    if (!result) break;
+
+    const signature = getRouteSignature(result.path);
+    if (!seenSignatures.has(signature)) {
+      seenSignatures.add(signature);
+      const journey = buildJourneyFromPath(result.path, fromStopId, data, timeSeconds, dateStr);
+
+      // Filter: don't include routes more than 2x slower than the best
+      if (routes.length === 0 || journey.totalSeconds <= routes[0].totalSeconds * 2) {
+        routes.push(journey);
+      }
+    }
+
+    if (routes.length >= maxRoutes) break;
+    penalties = buildPenalties(result.path, penalties);
+  }
+
+  return routes;
 }

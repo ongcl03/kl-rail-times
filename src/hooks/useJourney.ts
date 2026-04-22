@@ -16,7 +16,7 @@ export function useJourney(from: string | null, to: string | null, time?: string
 
   const { data, error, isLoading, mutate } = useSWR<{
     mode: "schedule" | "journey";
-    journey?: JourneyRoute | null;
+    journeys?: JourneyRoute[];
     direction0?: Arrival[];
     direction1?: Arrival[];
     dir0Label?: string;
