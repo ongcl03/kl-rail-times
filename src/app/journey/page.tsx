@@ -21,6 +21,7 @@ function JourneyContent() {
   const { favoriteJourneys, isJourneyFavorite, toggleJourney, isLoaded: favsLoaded } = useFavorites();
   const [from, setFrom] = useState<Station>(null);
   const [to, setTo] = useState<Station>(null);
+  const [paramsApplied, setParamsApplied] = useState(false);
   const [searched, setSearched] = useState(false);
   const [searchFrom, setSearchFrom] = useState<string | null>(null);
   const [searchTo, setSearchTo] = useState<string | null>(null);
@@ -32,9 +33,9 @@ function JourneyContent() {
 
   const { data, isLoading, mutate } = useJourney(searchFrom, searchTo, searchTime, searchDate);
 
-  // Pre-fill stations from URL params (e.g., /journey?from=SP16&to=PY23)
+  // Pre-fill stations from URL params once (e.g., /journey?from=SP16&to=PY23)
   useEffect(() => {
-    if (lines.length === 0) return;
+    if (paramsApplied || lines.length === 0) return;
     const findStation = (stopId: string): Station => {
       for (const line of lines) {
         const station = line.stations.find((s) => s.stopId === stopId);
@@ -42,15 +43,16 @@ function JourneyContent() {
       }
       return null;
     };
-    if (fromParam && !from) {
+    if (fromParam) {
       const s = findStation(fromParam);
       if (s) setFrom(s);
     }
-    if (toParam && !to) {
+    if (toParam) {
       const s = findStation(toParam);
       if (s) setTo(s);
     }
-  }, [fromParam, toParam, lines, from, to]);
+    setParamsApplied(true);
+  }, [paramsApplied, fromParam, toParam, lines]);
 
   const handleSearch = () => {
     if (!from) return;
