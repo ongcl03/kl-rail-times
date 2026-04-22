@@ -32,6 +32,7 @@ export interface JourneyRoute {
   legs: JourneyLeg[];
   totalSeconds: number;
   transfers: number;
+  distanceKm?: number;
   fare?: JourneyFare;
   departures: {
     time: string;

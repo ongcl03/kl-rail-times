@@ -1,15 +1,17 @@
-import { CircleMarker, Popup } from "react-leaflet";
+import { CircleMarker, Popup, Tooltip } from "react-leaflet";
 
 export function StationMarker({
   position,
   name,
   stopId,
   color,
+  showLabel,
 }: {
   position: [number, number];
   name: string;
   stopId: string;
   color: string;
+  showLabel?: boolean;
 }) {
   return (
     <CircleMarker
@@ -33,6 +35,16 @@ export function StationMarker({
           </a>
         </div>
       </Popup>
+      {showLabel && (
+        <Tooltip
+          direction="top"
+          offset={[0, -6]}
+          opacity={0.9}
+          permanent={false}
+        >
+          <span className="text-xs font-medium">{name}</span>
+        </Tooltip>
+      )}
     </CircleMarker>
   );
 }

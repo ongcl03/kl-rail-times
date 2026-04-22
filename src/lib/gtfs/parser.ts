@@ -6,6 +6,7 @@ import type {
   StopTime,
   CalendarEntry,
   Frequency,
+  ShapePoint,
 } from "./types";
 
 function parse<T>(csv: string): T[] {
@@ -117,4 +118,23 @@ export function parseFrequencies(csv: string): Map<string, Frequency[]> {
     map.set(tripId, list);
   }
   return map;
+}
+
+export function parseShapes(csv: string): Map<string, [number, number][]> {
+  const rows = parse<ShapePoint>(csv);
+  const byId = new Map<string, ShapePoint[]>();
+  for (const row of rows) {
+    if (!row.shape_id) continue;
+    const id = String(row.shape_id);
+    const list = byId.get(id) || [];
+    list.push({ ...row, shape_id: id });
+    byId.set(id, list);
+  }
+
+  const result = new Map<string, [number, number][]>();
+  for (const [id, pts] of byId) {
+    pts.sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence);
+    result.set(id, pts.map((p) => [p.shape_pt_lat, p.shape_pt_lon]));
+  }
+  return result;
 }

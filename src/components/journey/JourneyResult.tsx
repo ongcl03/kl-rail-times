@@ -73,6 +73,12 @@ export function JourneyResult({ journey }: { journey: JourneyRoute }) {
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-500 dark:text-slate-400 mt-1">
               <Clock className="w-3.5 h-3.5" />
               <span>{formatDuration(journey.totalSeconds)}</span>
+              {journey.distanceKm != null && (
+                <>
+                  <span>·</span>
+                  <span>{journey.distanceKm} km</span>
+                </>
+              )}
               <span>·</span>
               <span>
                 {journey.transfers === 0

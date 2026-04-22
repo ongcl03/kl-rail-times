@@ -51,6 +51,13 @@ export interface Frequency {
   headway_secs: number;
 }
 
+export interface ShapePoint {
+  shape_id: string;
+  shape_pt_lat: number;
+  shape_pt_lon: number;
+  shape_pt_sequence: number;
+}
+
 export interface GTFSData {
   stops: Map<string, Stop>;
   routes: Map<string, Route>;
@@ -60,6 +67,7 @@ export interface GTFSData {
   calendar: Map<string, CalendarEntry>;
   frequencies: Map<string, Frequency[]>; // by trip_id
   stopsForRoute: Map<string, Stop[]>;
+  shapesForRoute: Map<string, [number, number][]>; // route_id → [lat, lon][] (direction 0)
 }
 
 export interface Arrival {
@@ -85,6 +93,7 @@ export interface LineInfo {
   type: string;
   stationCount: number;
   stations: { stopId: string; stopName: string; stopLat: number; stopLon: number }[];
+  shape?: [number, number][]; // polyline coords from shapes.txt [lat, lon][]
 }
 
 export interface TimetableEntry {

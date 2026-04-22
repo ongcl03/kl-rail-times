@@ -7,6 +7,58 @@ import { getGTFSData } from "../gtfs/cache";
 
 const TRANSFER_PENALTY = 120; // seconds penalty per transfer to discourage unnecessary ones
 
+/** Haversine distance between two lat/lon points in km */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Calculate track distance for a leg using shape polyline or station coords */
+function legDistanceKm(leg: JourneyLeg, data: GTFSData): number {
+  if (leg.type === "transfer") {
+    // Walking transfer: straight-line between the two stops
+    const from = data.stops.get(leg.fromStopId);
+    const to = data.stops.get(leg.toStopId);
+    if (from && to) return haversineKm(from.stop_lat, from.stop_lon, to.stop_lat, to.stop_lon);
+    return 0;
+  }
+
+  // Rail leg: try shape data for actual track distance
+  const shape = data.shapesForRoute.get(leg.routeId);
+  if (shape && shape.length > 0) {
+    const fromStop = data.stops.get(leg.fromStopId);
+    const toStop = data.stops.get(leg.toStopId);
+    if (fromStop && toStop) {
+      // Find closest shape points to from/to stations
+      let fromIdx = 0, toIdx = 0, bestFromDist = Infinity, bestToDist = Infinity;
+      for (let i = 0; i < shape.length; i++) {
+        const df = (shape[i][0] - fromStop.stop_lat) ** 2 + (shape[i][1] - fromStop.stop_lon) ** 2;
+        const dt = (shape[i][0] - toStop.stop_lat) ** 2 + (shape[i][1] - toStop.stop_lon) ** 2;
+        if (df < bestFromDist) { bestFromDist = df; fromIdx = i; }
+        if (dt < bestToDist) { bestToDist = dt; toIdx = i; }
+      }
+      const start = Math.min(fromIdx, toIdx);
+      const end = Math.max(fromIdx, toIdx);
+      let dist = 0;
+      for (let i = start; i < end; i++) {
+        dist += haversineKm(shape[i][0], shape[i][1], shape[i + 1][0], shape[i + 1][1]);
+      }
+      return dist;
+    }
+  }
+
+  // Fallback: straight-line between from and to
+  const from = data.stops.get(leg.fromStopId);
+  const to = data.stops.get(leg.toStopId);
+  if (from && to) return haversineKm(from.stop_lat, from.stop_lon, to.stop_lat, to.stop_lon);
+  return 0;
+}
+
 interface DijkstraNode {
   stopId: string;
   cost: number;
@@ -268,10 +320,14 @@ export async function findJourneyRoute(
     ? computeDepartures(fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
     : [];
 
+  // Compute track distance
+  const distanceKm = Math.round(legs.reduce((sum, leg) => sum + legDistanceKm(leg, data), 0) * 100) / 100;
+
   return {
     legs,
     totalSeconds,
     transfers,
+    distanceKm,
     departures,
   };
 }

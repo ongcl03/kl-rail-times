@@ -26,6 +26,7 @@ export async function GET() {
         type: lineMeta.type,
         stationCount: stations.length,
         stations,
+        shape: data.shapesForRoute.get(lineMeta.gtfsRouteId),
       });
     }
 

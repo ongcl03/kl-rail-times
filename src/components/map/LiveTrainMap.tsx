@@ -131,6 +131,15 @@ export function LiveTrainMap() {
     return map;
   }, [lines]);
 
+  // Build shape lookup per line shortName
+  const lineShapeMap = useMemo(() => {
+    const map = new Map<string, [number, number][]>();
+    for (const line of lines) {
+      if (line.shape) map.set(line.shortName, line.shape);
+    }
+    return map;
+  }, [lines]);
+
   // For journey mode: extract route segments (polylines + station dots)
   const journeySegments = useMemo(() => {
     if (!isJourneyMode) return [];
@@ -142,13 +151,35 @@ export function LiveTrainMap() {
       const start = Math.min(fromIdx, toIdx);
       const end = Math.max(fromIdx, toIdx);
       const segment = stops.slice(start, end + 1);
-      return {
-        coords: segment.map((s) => [s.lat, s.lon] as [number, number]),
-        stations: segment,
-        color: leg.color,
-      };
+
+      // Try to use shape data for smoother polyline
+      const shape = lineShapeMap.get(leg.lineShortName);
+      let coords: [number, number][];
+      if (shape && segment.length >= 2) {
+        const firstStation = segment[0];
+        const lastStation = segment[segment.length - 1];
+        // Find closest shape points to the first and last station
+        const findClosest = (lat: number, lon: number) => {
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < shape.length; i++) {
+            const d = (shape[i][0] - lat) ** 2 + (shape[i][1] - lon) ** 2;
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
+          }
+          return bestIdx;
+        };
+        const si = findClosest(firstStation.lat, firstStation.lon);
+        const ei = findClosest(lastStation.lat, lastStation.lon);
+        const sliceStart = Math.min(si, ei);
+        const sliceEnd = Math.max(si, ei);
+        coords = shape.slice(sliceStart, sliceEnd + 1);
+      } else {
+        coords = segment.map((s) => [s.lat, s.lon] as [number, number]);
+      }
+
+      return { coords, stations: segment, color: leg.color };
     });
-  }, [isJourneyMode, parsedLegs, lineStationOrder]);
+  }, [isJourneyMode, parsedLegs, lineStationOrder, lineShapeMap]);
 
   // All bounds for journey fitBounds
   const journeyBounds = useMemo(() => {
@@ -195,6 +226,7 @@ export function LiveTrainMap() {
                   name={stopNameMap.get(s.stopId) || s.stopId}
                   stopId={s.stopId}
                   color={seg.color}
+                  showLabel
                 />
               ))
             )}
@@ -231,9 +263,11 @@ export function LiveTrainMap() {
               const realtimeId = lineIdToRealtimeId.get(line.id);
               if (realtimeId && !visibleLines.has(realtimeId)) return null;
 
-              const coords = line.stations
-                .filter((s) => s.stopLat && s.stopLon)
-                .map((s) => [s.stopLat, s.stopLon] as [number, number]);
+              const coords = line.shape
+                ? line.shape
+                : line.stations
+                    .filter((s) => s.stopLat && s.stopLon)
+                    .map((s) => [s.stopLat, s.stopLon] as [number, number]);
 
               return (
                 <Polyline

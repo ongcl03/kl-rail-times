@@ -6,6 +6,7 @@ import {
   parseStopTimes,
   parseCalendar,
   parseFrequencies,
+  parseShapes,
 } from "./parser";
 import type { GTFSData, Stop } from "./types";
 
@@ -25,6 +26,7 @@ async function loadGTFSData(): Promise<GTFSData> {
     parseStopTimes(files.get("stop_times.txt") || "");
   const calendar = parseCalendar(files.get("calendar.txt") || "");
   const frequencies = parseFrequencies(files.get("frequencies.txt") || "");
+  const shapes = parseShapes(files.get("shapes.txt") || "");
 
   // Build stopsForRoute: ordered list of stops per route (using direction 0)
   const stopsForRoute = new Map<string, Stop[]>();
@@ -44,6 +46,17 @@ async function loadGTFSData(): Promise<GTFSData> {
     }
   }
 
+  // Build shapesForRoute: use the shape from a direction-0 trip for each route
+  const shapesForRoute = new Map<string, [number, number][]>();
+  for (const [, trip] of trips) {
+    if (shapesForRoute.has(trip.route_id)) continue;
+    if (trip.direction_id !== 0 || !trip.shape_id) continue;
+    const coords = shapes.get(trip.shape_id);
+    if (coords && coords.length > 0) {
+      shapesForRoute.set(trip.route_id, coords);
+    }
+  }
+
   console.log(
     `[GTFS] Loaded: ${stops.size} stops, ${routes.size} routes, ${trips.size} trips, ${frequencies.size} frequency entries`
   );
@@ -57,6 +70,7 @@ async function loadGTFSData(): Promise<GTFSData> {
     calendar,
     frequencies,
     stopsForRoute,
+    shapesForRoute,
   };
 }
 
