@@ -94,6 +94,7 @@ export function LiveTrainMap() {
   const journeyFrom = searchParams.get("from");
   const journeyTo = searchParams.get("to");
   const journeyLegs = searchParams.getAll("leg"); // "fromStop,toStop,lineShortName"
+  const journeyTransfers = searchParams.getAll("transfer"); // "fromStop,toStop"
 
   const isJourneyMode = journeyFrom && journeyTo && journeyLegs.length > 0;
 
@@ -181,6 +182,24 @@ export function LiveTrainMap() {
     });
   }, [isJourneyMode, parsedLegs, lineStationOrder, lineShapeMap]);
 
+  // Parse transfer walks into coordinate pairs
+  const transferSegments = useMemo(() => {
+    if (!isJourneyMode) return [];
+    return journeyTransfers.map((t) => {
+      const [fromStop, toStop] = t.split(",");
+      const fromStation = stationLookup.get(fromStop);
+      const toStation = stationLookup.get(toStop);
+      if (fromStation && toStation) {
+        return {
+          coords: [[fromStation.lat, fromStation.lon], [toStation.lat, toStation.lon]] as [number, number][],
+          fromName: fromStation.name,
+          toName: toStation.name,
+        };
+      }
+      return null;
+    }).filter(Boolean) as { coords: [number, number][]; fromName: string; toName: string }[];
+  }, [isJourneyMode, journeyTransfers, stationLookup]);
+
   // All bounds for journey fitBounds
   const journeyBounds = useMemo(() => {
     if (!isJourneyMode) return [];
@@ -214,6 +233,20 @@ export function LiveTrainMap() {
                 key={`journey-line-${i}`}
                 positions={seg.coords}
                 pathOptions={{ color: seg.color, weight: 5, opacity: 0.9 }}
+              />
+            ))}
+
+            {/* Walking transfer dashed lines */}
+            {transferSegments.map((seg, i) => (
+              <Polyline
+                key={`transfer-${i}`}
+                positions={seg.coords}
+                pathOptions={{
+                  color: "#94a3b8",
+                  weight: 3,
+                  opacity: 0.7,
+                  dashArray: "6, 8",
+                }}
               />
             ))}
 

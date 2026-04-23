@@ -64,6 +64,9 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
     journey.legs
       .filter((l) => l.type === "rail")
       .forEach((l) => params.append("leg", `${l.fromStopId},${l.toStopId},${l.lineShortName}`));
+    journey.legs
+      .filter((l) => l.type === "transfer")
+      .forEach((l) => params.append("transfer", `${l.fromStopId},${l.toStopId}`));
     return `/map?${params.toString()}`;
   })();
 
