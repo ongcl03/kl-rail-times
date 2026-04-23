@@ -327,7 +327,7 @@ function buildJourneyFromPath(
   const firstRailLeg = legs.find((l) => l.type === "rail");
   const requestTime = timeSeconds ?? getCurrentSeconds();
   const departures = firstRailLeg
-    ? computeDepartures(fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
+    ? computeDepartures(firstRailLeg.fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
     : [];
 
   const distanceKm = Math.round(legs.reduce((sum, leg) => sum + legDistanceKm(leg, data), 0) * 100) / 100;
