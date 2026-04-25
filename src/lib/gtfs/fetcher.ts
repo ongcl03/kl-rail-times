@@ -1,12 +1,15 @@
 import AdmZip from "adm-zip";
 
-const GTFS_STATIC_URL =
+const GTFS_PRASARANA_URL =
   "https://api.data.gov.my/gtfs-static/prasarana?category=rapid-rail-kl";
 
-export async function fetchGTFSStaticZip(): Promise<Map<string, string>> {
-  const response = await fetch(GTFS_STATIC_URL);
+const GTFS_KTMB_URL =
+  "https://api.data.gov.my/gtfs-static/ktmb";
+
+async function fetchZip(url: string): Promise<Map<string, string>> {
+  const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to fetch GTFS static  ${response.status}`);
+    throw new Error(`Failed to fetch GTFS static ${response.status} from ${url}`);
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
@@ -20,4 +23,12 @@ export async function fetchGTFSStaticZip(): Promise<Map<string, string>> {
   }
 
   return files;
+}
+
+export async function fetchGTFSStaticZip(): Promise<Map<string, string>> {
+  return fetchZip(GTFS_PRASARANA_URL);
+}
+
+export async function fetchKTMBStaticZip(): Promise<Map<string, string>> {
+  return fetchZip(GTFS_KTMB_URL);
 }

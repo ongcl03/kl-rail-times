@@ -22,7 +22,7 @@ const CROSS_LINE: InterchangeGroup[] = [
   { name: "Hang Tuah", stops: ["AG9", "SP9", "MR4"], walkMinutes: 4 },
   { name: "Chan Sow Lin", stops: ["AG11", "SP11", "PY24"], walkMinutes: 4 },
   { name: "Maluri", stops: ["AG13", "KG22"], walkMinutes: 5 },
-  { name: "KL Sentral", stops: ["KJ15", "MR1"], walkMinutes: 5 },
+  { name: "KL Sentral", stops: ["KJ15", "MR1", "19100"], walkMinutes: 5 },
   { name: "Pasar Seni", stops: ["KJ14", "KG16"], walkMinutes: 4 },
   { name: "Ampang Park", stops: ["KJ9", "PY20"], walkMinutes: 4 },
   { name: "Putra Heights", stops: ["KJ37", "SP31"], walkMinutes: 3 },
@@ -32,9 +32,21 @@ const CROSS_LINE: InterchangeGroup[] = [
   { name: "Sungai Besi", stops: ["SP16", "PY29"], walkMinutes: 4 },
 ];
 
+// KTM ↔ Prasarana interchanges
+const KTM_PRASARANA: InterchangeGroup[] = [
+  { name: "Bank Negara / PWTC", stops: ["18900", "AG4", "SP4"], walkMinutes: 5 },
+  { name: "KTM KL / Pasar Seni", stops: ["19000", "KJ14", "KG16"], walkMinutes: 5 },
+  { name: "Bandar Tasik Selatan", stops: ["19600", "SP15"], walkMinutes: 3 },
+  { name: "Salak Selatan", stops: ["19400", "SP13"], walkMinutes: 5 },
+  { name: "Sungai Buloh", stops: ["18500", "PY04"], walkMinutes: 4 },
+  { name: "Subang Jaya", stops: ["53700", "KJ28"], walkMinutes: 3 },
+  { name: "Kajang", stops: ["20400", "KG35"], walkMinutes: 5 },
+];
+
 export const INTERCHANGE_GROUPS: InterchangeGroup[] = [
   ...AG_PH_SHARED,
   ...CROSS_LINE,
+  ...KTM_PRASARANA,
 ];
 
 /** Lookup: stopId -> interchange name (if any) */

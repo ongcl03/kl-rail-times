@@ -17,6 +17,9 @@ export async function GET() {
         }
       }
 
+      // Skip lines with no station data (e.g., ES has no stop_times in GTFS)
+      if (stations.length === 0) continue;
+
       lines.push({
         id: lineMeta.id,
         name: lineMeta.name,

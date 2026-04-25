@@ -3,15 +3,18 @@ import { useState, useEffect } from "react";
 import { ArrivalRow } from "./ArrivalRow";
 import { ArrivalSkeleton } from "../ui/Skeleton";
 import { useArrivals } from "@/hooks/useArrivals";
-import { RefreshCw, Clock, Calendar } from "lucide-react";
+import { RefreshCw, Clock, Calendar, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-const COUNTDOWN_LIMIT = 5; // show countdown for first N trains
+const COUNTDOWN_LIMIT = 5;
+const KTMB_TIMETABLE_URL = "https://www.ktmb.com.my/TrainTime.html";
 
 export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: string }) {
   const { direction0, direction1, dir0Label, dir1Label, isLoading, refresh } = useArrivals(stopId);
   const [activeDir, setActiveDir] = useState(0);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  const isKtmStation = /^\d+$/.test(stopId);
 
   useEffect(() => {
     if (!isLoading) setLastUpdate(new Date());
@@ -83,13 +86,6 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
           {/* Full timetable link + remaining trains */}
           {arrivals.length > COUNTDOWN_LIMIT && (
             <>
-              <Link
-                href={`/station/${stopId}/timetable`}
-                className="flex items-center justify-center gap-2 py-2.5 mt-4 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950 transition-all"
-              >
-                <Calendar className="w-4 h-4" />
-                View full day timetable
-              </Link>
               <div className="flex items-center gap-2 mt-4 mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Later
@@ -117,6 +113,27 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
             Service may have ended for today
           </p>
         </div>
+      )}
+
+      {/* Full timetable link — always visible */}
+      <Link
+        href={`/station/${stopId}/timetable`}
+        className="flex items-center justify-center gap-2 py-2.5 mt-4 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950 transition-all"
+      >
+        <Calendar className="w-4 h-4" />
+        View full day timetable
+      </Link>
+
+      {isKtmStation && (
+        <a
+          href={KTMB_TIMETABLE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 py-2.5 mt-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          View official KTMB timetable
+        </a>
       )}
 
       <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-6">
