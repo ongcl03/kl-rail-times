@@ -171,7 +171,8 @@ function computeArrivalsForServices(
 /** Look up the headsign labels for both directions of a stop's route */
 function getDirectionLabels(
   data: Awaited<ReturnType<typeof getGTFSData>>,
-  stopIds: string[]
+  stopIds: string[],
+  routeId?: string
 ): { dir0Label: string; dir1Label: string } {
   let dir0Label = "";
   let dir1Label = "";
@@ -183,11 +184,23 @@ function getDirectionLabels(
     for (const st of stopTimes) {
       if (dir0Label && dir1Label) break;
       const trip = data.trips.get(st.trip_id);
-      if (!trip || !trip.trip_headsign) continue;
+      if (!trip) continue;
+      if (routeId && trip.route_id !== routeId) continue;
 
-      const toMatch = trip.trip_headsign.match(/to\s+(.+)$/i);
-      const label = toMatch ? toMatch[1] : trip.trip_headsign;
+      let label = "";
+      if (trip.trip_headsign) {
+        const toMatch = trip.trip_headsign.match(/to\s+(.+)$/i);
+        label = toMatch ? toMatch[1] : trip.trip_headsign;
+      } else {
+        const tripStops = data.stopTimesByTrip.get(trip.trip_id);
+        if (tripStops && tripStops.length > 0) {
+          const lastStopId = tripStops[tripStops.length - 1].stop_id;
+          const lastStop = data.stops.get(lastStopId);
+          label = lastStop?.stop_name || "";
+        }
+      }
 
+      if (!label) continue;
       if (trip.direction_id === 0 && !dir0Label) dir0Label = label;
       if (trip.direction_id === 1 && !dir1Label) dir1Label = label;
     }
@@ -220,7 +233,7 @@ export async function getNextArrivals(
   }
 
   // Get direction labels from GTFS trip headsigns (always available)
-  const { dir0Label, dir1Label } = getDirectionLabels(data, stopIds);
+  const { dir0Label, dir1Label } = getDirectionLabels(data, stopIds, routeId);
 
   // Today's services
   const todayDow = getMalaysiaDayOfWeek();
@@ -300,7 +313,7 @@ export async function getFullDaySchedule(
     if (stop.parent_station === stopId) stopIds.push(sid);
   }
 
-  const { dir0Label, dir1Label } = getDirectionLabels(data, stopIds);
+  const { dir0Label, dir1Label } = getDirectionLabels(data, stopIds, routeId);
 
   const dow = DAY_TYPE_TO_DOW[resolvedDayType] ?? getMalaysiaDayOfWeek();
   const activeServices = getActiveServiceIdsForDay(data.calendar, dow, today);
