@@ -50,7 +50,8 @@ export function SearchBar({ lines }: { lines: LineInfo[] }) {
         case "Enter":
           e.preventDefault();
           if (activeIndex >= 0 && activeIndex < results.length) {
-            router.push(`/station/${results[activeIndex].stopId}`);
+            const r = results[activeIndex];
+            router.push(`/station/${r.stopId}?line=${r.lineId}`);
             setQuery("");
             inputRef.current?.blur();
           }
@@ -110,14 +111,14 @@ export function SearchBar({ lines }: { lines: LineInfo[] }) {
         >
           {results.map((r, i) => (
             <a
-              key={r.stopId}
+              key={`${r.stopId}_${r.lineId}`}
               id={`search-result-${i}`}
               role="option"
               aria-selected={i === activeIndex}
-              href={`/station/${r.stopId}`}
+              href={`/station/${r.stopId}?line=${r.lineId}`}
               onClick={(e) => {
                 e.preventDefault();
-                router.push(`/station/${r.stopId}`);
+                router.push(`/station/${r.stopId}?line=${r.lineId}`);
                 setQuery("");
               }}
               className={`flex items-center gap-3 px-4 py-3 transition-colors cursor-pointer ${

@@ -1,6 +1,7 @@
 "use client";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useLines } from "@/hooks/useLines";
+import { LINES } from "@/lib/lines";
 import { BackButton } from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -31,6 +32,7 @@ function TimetableContent() {
   const { lines, isLoading: linesLoading } = useLines();
 
   const dayParam = searchParams.get("day");
+  const lineParam = searchParams.get("line");
   const [dayType, setDayType] = useState(dayParam || getCurrentDayType());
   const [activeDir, setActiveDir] = useState(0);
   const [nowSeconds, setNowSeconds] = useState(() => {
@@ -46,24 +48,28 @@ function TimetableContent() {
     return () => clearInterval(interval);
   }, []);
 
+  const lineMeta = lineParam ? LINES.find((l) => l.id === lineParam) : undefined;
+  const routeParam = lineMeta ? `&route=${lineMeta.gtfsRouteId}` : "";
+
   const { data, isLoading } = useSWR<{
     direction0: TimetableEntry[];
     direction1: TimetableEntry[];
     dir0Label: string;
     dir1Label: string;
-  }>(`/api/arrivals/${stopId}?mode=fullday&day=${dayType}`, fetcher, {
+  }>(`/api/arrivals/${stopId}?mode=fullday&day=${dayType}${routeParam}`, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 300_000,
   });
 
   // Find station info
   let stationName = stopId;
-  const stationLines: { shortName: string; name: string; color: string; textColor: string }[] = [];
+  const stationLines: { id: string; shortName: string; name: string; color: string; textColor: string }[] = [];
   for (const line of lines) {
     for (const station of line.stations) {
       if (station.stopId === stopId) {
         stationName = station.stopName;
         stationLines.push({
+          id: line.id,
           shortName: line.shortName,
           name: line.name,
           color: line.color,
@@ -74,15 +80,21 @@ function TimetableContent() {
     }
   }
 
+  const displayLines = lineParam
+    ? stationLines.filter((l) => l.id === lineParam)
+    : stationLines;
+  const shownLines = displayLines.length > 0 ? displayLines : stationLines;
+
   const entries = activeDir === 0 ? (data?.direction0 || []) : (data?.direction1 || []);
   const dir0Label = data?.dir0Label || "";
   const dir1Label = data?.dir1Label || "";
-  const primaryColor = stationLines[0]?.color || "#6B7280";
+  const primaryColor = shownLines[0]?.color || "#6B7280";
   const isToday = dayType === getCurrentDayType();
 
   const handleDayChange = (newDay: string) => {
     setDayType(newDay);
-    router.replace(`/station/${stopId}/timetable?day=${newDay}`, { scroll: false });
+    const lineQuery = lineParam ? `&line=${lineParam}` : "";
+    router.replace(`/station/${stopId}/timetable?day=${newDay}${lineQuery}`, { scroll: false });
   };
 
   if (linesLoading) {
@@ -108,7 +120,7 @@ function TimetableContent() {
             />
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                {stationLines.map((l) => (
+                {shownLines.map((l) => (
                   <Badge
                     key={l.shortName}
                     label={`${l.shortName} ${l.name}`}

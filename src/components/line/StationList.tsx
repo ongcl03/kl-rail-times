@@ -20,7 +20,7 @@ export function StationList({ line }: { line: LineInfo }) {
           return (
             <Link
               key={station.stopId}
-              href={`/station/${station.stopId}`}
+              href={`/station/${station.stopId}?line=${line.id}`}
               className="group flex items-center gap-3 py-2.5 -ml-8 pl-8 relative hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
             >
               {/* Station dot */}

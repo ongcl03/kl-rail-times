@@ -4,13 +4,17 @@ import type { Arrival } from "@/lib/gtfs/types";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export function useArrivals(stopId: string | null) {
+export function useArrivals(stopId: string | null, routeId?: string) {
+  const url = stopId
+    ? `/api/arrivals/${stopId}${routeId ? `?route=${routeId}` : ""}`
+    : null;
+
   const { data, error, isLoading, mutate } = useSWR<{
     direction0: Arrival[];
     direction1: Arrival[];
     dir0Label: string;
     dir1Label: string;
-  }>(stopId ? `/api/arrivals/${stopId}` : null, fetcher, {
+  }>(url, fetcher, {
     refreshInterval: 30_000,
     revalidateOnFocus: true,
   });

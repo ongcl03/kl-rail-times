@@ -9,8 +9,8 @@ import Link from "next/link";
 const COUNTDOWN_LIMIT = 5;
 const KTMB_TIMETABLE_URL = "https://www.ktmb.com.my/TrainTime.html";
 
-export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: string }) {
-  const { direction0, direction1, dir0Label, dir1Label, isLoading, refresh } = useArrivals(stopId);
+export function ArrivalBoard({ stopId, stopName, routeId, lineId }: { stopId: string; stopName: string; routeId?: string; lineId?: string }) {
+  const { direction0, direction1, dir0Label, dir1Label, isLoading, refresh } = useArrivals(stopId, routeId);
   const [activeDir, setActiveDir] = useState(0);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
@@ -117,7 +117,7 @@ export function ArrivalBoard({ stopId, stopName }: { stopId: string; stopName: s
 
       {/* Full timetable link — always visible */}
       <Link
-        href={`/station/${stopId}/timetable`}
+        href={`/station/${stopId}/timetable${lineId ? `?line=${lineId}` : ""}`}
         className="flex items-center justify-center gap-2 py-2.5 mt-4 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950 transition-all"
       >
         <Calendar className="w-4 h-4" />

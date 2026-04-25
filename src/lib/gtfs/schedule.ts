@@ -61,7 +61,8 @@ function computeArrivalsForServices(
   activeServices: Set<string>,
   nowSeconds: number,
   isOvernight: boolean,
-  maxSeconds: number = 3600
+  maxSeconds: number = 3600,
+  routeId?: string
 ): Arrival[] {
   const results: Arrival[] = [];
 
@@ -73,6 +74,7 @@ function computeArrivalsForServices(
       const trip = data.trips.get(st.trip_id);
       if (!trip) continue;
       if (!activeServices.has(trip.service_id)) continue;
+      if (routeId && trip.route_id !== routeId) continue;
 
       const line = matchLineByRouteId(trip.route_id);
 
@@ -198,7 +200,8 @@ function getDirectionLabels(
 export async function getNextArrivals(
   stopId: string,
   limit = 5,
-  maxSeconds = 3600
+  maxSeconds = 3600,
+  routeId?: string
 ): Promise<{
   direction0: Arrival[];
   direction1: Arrival[];
@@ -225,7 +228,7 @@ export async function getNextArrivals(
   const todayServices = getActiveServiceIdsForDay(data.calendar, todayDow, todayDate);
 
   let allArrivals = computeArrivalsForServices(
-    data, stopIds, todayServices, nowSeconds, false, maxSeconds
+    data, stopIds, todayServices, nowSeconds, false, maxSeconds, routeId
   );
 
   // If it's early morning (before 4 AM), also check yesterday's late-night schedule
@@ -237,9 +240,8 @@ export async function getNextArrivals(
     );
 
     // Shift nowSeconds by +86400 so it can compare against yesterday's GTFS times
-    // e.g., 00:18 becomes 86400 + 1080 = 87480, which can match against arrival 88873
     const overnightArrivals = computeArrivalsForServices(
-      data, stopIds, yesterdayServices, nowSeconds + SECONDS_IN_DAY, true, maxSeconds
+      data, stopIds, yesterdayServices, nowSeconds + SECONDS_IN_DAY, true, maxSeconds, routeId
     );
 
     allArrivals = [...allArrivals, ...overnightArrivals];
@@ -280,10 +282,11 @@ const fullDayCache = new Map<
 
 export async function getFullDaySchedule(
   stopId: string,
-  dayType?: string
+  dayType?: string,
+  routeId?: string
 ): Promise<FullDaySchedule> {
   const resolvedDayType = dayType || getDayType();
-  const cacheKey = `${stopId}_${resolvedDayType}`;
+  const cacheKey = `${stopId}_${resolvedDayType}${routeId ? `_${routeId}` : ""}`;
   const today = getMalaysiaDateString();
   const cached = fullDayCache.get(cacheKey);
   if (cached && cached.key === `${today}_${resolvedDayType}`) {
@@ -313,6 +316,7 @@ export async function getFullDaySchedule(
       const trip = data.trips.get(st.trip_id);
       if (!trip) continue;
       if (!activeServices.has(trip.service_id)) continue;
+      if (routeId && trip.route_id !== routeId) continue;
 
       const line = matchLineByRouteId(trip.route_id);
 

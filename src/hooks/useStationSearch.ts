@@ -23,11 +23,12 @@ export function useStationSearch(lines: LineInfo[]) {
       }
     }
 
-    // Deduplicate by stopId
+    // Deduplicate by stopId+lineId (allows same station to appear per line)
     const seen = new Set<string>();
     return matches.filter((m) => {
-      if (seen.has(m.stopId)) return false;
-      seen.add(m.stopId);
+      const key = `${m.stopId}_${m.lineId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     }).slice(0, 10);
   }, [query, lines]);

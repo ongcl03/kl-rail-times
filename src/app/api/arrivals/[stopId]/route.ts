@@ -11,17 +11,17 @@ export async function GET(
     const { stopId } = await params;
     const url = new URL(request.url);
     const mode = url.searchParams.get("mode");
+    const routeId = url.searchParams.get("route") || undefined;
 
     if (mode === "fullday") {
       const dayType = url.searchParams.get("day") || undefined;
-      const schedule = await getFullDaySchedule(stopId, dayType);
+      const schedule = await getFullDaySchedule(stopId, dayType, routeId);
       return NextResponse.json(schedule, {
         headers: { "Cache-Control": "public, max-age=300" },
       });
     }
 
-    // Default: return all remaining trains for today (no limit)
-    const arrivals = await getNextArrivals(stopId, 200, REST_OF_DAY);
+    const arrivals = await getNextArrivals(stopId, 200, REST_OF_DAY, routeId);
     return NextResponse.json(arrivals);
   } catch (error) {
     console.error("[API] arrivals error:", error);

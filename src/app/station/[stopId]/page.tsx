@@ -1,6 +1,7 @@
 "use client";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useLines } from "@/hooks/useLines";
+import { LINES } from "@/lib/lines";
 import { ArrivalBoard } from "@/components/station/ArrivalBoard";
 import { BackButton } from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/Badge";
@@ -11,27 +12,41 @@ import { Navigation } from "lucide-react";
 
 export default function StationPage() {
   const { stopId } = useParams<{ stopId: string }>();
+  const searchParams = useSearchParams();
+  const lineParam = searchParams.get("line"); // e.g., "ktm-shuttle"
   const { lines, isLoading } = useLines();
 
   let stationName = stopId;
-  const stationLines: { name: string; shortName: string; color: string; textColor: string }[] = [];
+  const stationLines: { id: string; name: string; shortName: string; color: string; textColor: string; gtfsRouteId: string }[] = [];
 
   for (const line of lines) {
     for (const station of line.stations) {
       if (station.stopId === stopId) {
         stationName = station.stopName;
+        const meta = LINES.find((l) => l.id === line.id);
         stationLines.push({
+          id: line.id,
           name: line.name,
           shortName: line.shortName,
           color: line.color,
           textColor: line.textColor,
+          gtfsRouteId: meta?.gtfsRouteId || "",
         });
         break;
       }
     }
   }
 
-  const primaryColor = stationLines[0]?.color || "#6B7280";
+  // When ?line= is set, filter to only that line
+  const filteredLines = lineParam
+    ? stationLines.filter((l) => l.id === lineParam)
+    : stationLines;
+
+  const displayLines = filteredLines.length > 0 ? filteredLines : stationLines;
+  const primaryColor = displayLines[0]?.color || "#6B7280";
+
+  // Pass the gtfsRouteId to filter arrivals when a specific line is selected
+  const routeId = lineParam && displayLines.length === 1 ? displayLines[0].gtfsRouteId : undefined;
 
   if (isLoading) {
     return (
@@ -61,7 +76,7 @@ export default function StationPage() {
             <div className="flex-1 flex items-center justify-between gap-2">
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  {stationLines.map((l) => (
+                  {displayLines.map((l) => (
                     <Badge
                       key={l.shortName}
                       label={`${l.shortName} ${l.name}`}
@@ -91,7 +106,7 @@ export default function StationPage() {
 
       {/* Arrival board */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <ArrivalBoard stopId={stopId} stopName={stationName} />
+        <ArrivalBoard stopId={stopId} stopName={stationName} routeId={routeId} lineId={lineParam || undefined} />
       </div>
     </div>
   );
