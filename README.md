@@ -35,6 +35,7 @@ Train times are computed from the published schedule, not live GPS data. See the
 - **[How Train Times Are Computed](docs/train-times.md)** — How the app generates arrival times from GTFS frequency-based schedule data
 - **[How Distance Is Calculated](docs/distance-calculation.md)** — Track distance using shapes.txt geometry vs straight-line haversine
 - **[How Routes Are Found](docs/routing-algorithm.md)** — Dijkstra's algorithm, transfer penalties, and alternative route generation
+- **[Data Limitations](docs/limitations.md)** — Known gaps in KTMB GTFS data (missing ETS southern leg, sparse Komuter schedules)
 
 ## Tech Stack
 
