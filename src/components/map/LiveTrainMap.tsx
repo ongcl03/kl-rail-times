@@ -228,13 +228,34 @@ export function LiveTrainMap() {
         {isJourneyMode ? (
           <>
             {/* Journey route segments */}
-            {journeySegments.map((seg, i) => (
-              <Polyline
-                key={`journey-line-${i}`}
-                positions={seg.coords}
-                pathOptions={{ color: seg.color, weight: 5, opacity: 0.9 }}
-              />
-            ))}
+            {journeySegments.map((seg, i) => {
+              const leg = parsedLegs[i];
+              const lineMeta = leg ? LINES.find((l) => l.shortName === leg.lineShortName) : undefined;
+              return (
+                <Polyline
+                  key={`journey-line-${i}`}
+                  positions={seg.coords}
+                  pathOptions={{ color: seg.color, weight: 5, opacity: 0.9 }}
+                >
+                  {lineMeta && (
+                    <Popup>
+                      <div className="text-center">
+                        <p className="font-semibold text-sm" style={{ color: seg.color }}>
+                          {lineMeta.shortName} — {lineMeta.name}
+                        </p>
+                        <p className="text-xs text-slate-500">{seg.stations.length} stops on this segment</p>
+                        <a
+                          href={`/line/${lineMeta.id}`}
+                          className="text-xs text-blue-600 underline mt-1 inline-block"
+                        >
+                          View line details
+                        </a>
+                      </div>
+                    </Popup>
+                  )}
+                </Polyline>
+              );
+            })}
 
             {/* Walking transfer dashed lines */}
             {transferSegments.map((seg, i) => (
@@ -292,7 +313,7 @@ export function LiveTrainMap() {
         ) : (
           <>
             {/* Rail lines */}
-            {lines.map((line) => {
+            {lines.map((line, lineIndex) => {
               const realtimeId = lineIdToRealtimeId.get(line.id);
               if (realtimeId && !visibleLines.has(realtimeId)) return null;
 
@@ -306,7 +327,7 @@ export function LiveTrainMap() {
                 <Polyline
                   key={`line-${line.id}`}
                   positions={coords}
-                  pathOptions={{ color: line.color, weight: 3, opacity: 0.7 }}
+                  pathOptions={{ color: line.color, weight: 3, opacity: 1 }}
                 >
                   <Popup>
                     <div className="text-center">
