@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { MapContainer, TileLayer, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, Popup, useMap } from "react-leaflet";
 import { useSearchParams } from "next/navigation";
 import L from "leaflet";
 import { useVehiclePositions } from "@/hooks/useVehiclePositions";
@@ -307,7 +307,22 @@ export function LiveTrainMap() {
                   key={`line-${line.id}`}
                   positions={coords}
                   pathOptions={{ color: line.color, weight: 3, opacity: 0.7 }}
-                />
+                >
+                  <Popup>
+                    <div className="text-center">
+                      <p className="font-semibold text-sm" style={{ color: line.color }}>
+                        {line.shortName} — {line.name}
+                      </p>
+                      <p className="text-xs text-slate-500">{line.stationCount} stations</p>
+                      <a
+                        href={`/line/${line.id}`}
+                        className="text-xs text-blue-600 underline mt-1 inline-block"
+                      >
+                        View line details
+                      </a>
+                    </div>
+                  </Popup>
+                </Polyline>
               );
             })}
 

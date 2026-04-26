@@ -11,35 +11,25 @@ const STATUS_LABELS: Record<number, string> = {
 
 function createTrainIcon(color: string, bearing: number | null): L.DivIcon {
   const rotation = bearing ?? 0;
-  const showArrow = bearing != null;
 
   return L.divIcon({
     className: "",
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
     html: `
-      <div style="position:relative;width:20px;height:20px;">
-        <div style="
-          width:14px;height:14px;
-          border-radius:50%;
-          background:${color};
-          border:2px solid white;
-          box-shadow:0 1px 4px rgba(0,0,0,0.3);
-          position:absolute;top:3px;left:3px;
-        "></div>
-        ${
-          showArrow
-            ? `<div style="
-            position:absolute;top:-4px;left:7px;
-            width:0;height:0;
-            border-left:3px solid transparent;
-            border-right:3px solid transparent;
-            border-bottom:6px solid ${color};
-            transform:rotate(${rotation}deg);
-            transform-origin:3px 14px;
-          "></div>`
-            : ""
-        }
+      <div style="
+        width:36px;height:36px;
+        transform:rotate(${rotation}deg);
+        filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+      ">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L8 5V15C8 16.1 8.9 17 10 17H14C15.1 17 16 16.1 16 15V5L12 2Z" fill="${color}" stroke="white" stroke-width="1.2"/>
+          <rect x="10" y="7" width="4" height="3" rx="0.5" fill="white" opacity="0.9"/>
+          <circle cx="10.5" cy="14" r="1" fill="white" opacity="0.9"/>
+          <circle cx="13.5" cy="14" r="1" fill="white" opacity="0.9"/>
+          <path d="M12 17L12 20" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M9 20H15" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
       </div>
     `,
   });
