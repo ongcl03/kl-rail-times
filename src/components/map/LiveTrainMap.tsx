@@ -132,6 +132,115 @@ export function LiveTrainMap() {
     return map;
   }, [lines]);
 
+  // Compute offset coordinates for overlapping lines (KTM shared tracks)
+  const offsetLineCoords = useMemo(() => {
+    const OFFSET = 0.003; // ~300m at Malaysia latitude
+
+    // Build raw coords per line (only non-shape lines can overlap)
+    const rawCoords = new Map<string, [number, number][]>();
+    for (const line of lines) {
+      const coords: [number, number][] = line.shape
+        ? line.shape
+        : line.stations
+            .filter((s) => s.stopLat && s.stopLon)
+            .map((s) => [s.stopLat, s.stopLon]);
+      rawCoords.set(line.id, coords);
+    }
+
+    // Index segments: "roundedLat1,roundedLon1->roundedLat2,roundedLon2" => lineId[]
+    const segKey = (a: [number, number], b: [number, number]) => {
+      const r = (n: number) => n.toFixed(3);
+      const k1 = `${r(a[0])},${r(a[1])}->${r(b[0])},${r(b[1])}`;
+      const k2 = `${r(b[0])},${r(b[1])}->${r(a[0])},${r(a[1])}`;
+      return k1 < k2 ? k1 : k2; // canonical order
+    };
+
+    const segmentLines = new Map<string, string[]>();
+    for (const line of lines) {
+      if (line.shape) continue; // Prasarana lines with shapes don't overlap
+      const coords = rawCoords.get(line.id)!;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const key = segKey(coords[i], coords[i + 1]);
+        const arr = segmentLines.get(key) || [];
+        if (!arr.includes(line.id)) arr.push(line.id);
+        segmentLines.set(key, arr);
+      }
+    }
+
+    // Offset function: perpendicular to segment direction
+    const offsetPoint = (
+      pt: [number, number],
+      prev: [number, number] | null,
+      next: [number, number] | null,
+      amount: number
+    ): [number, number] => {
+      const ref = next || prev;
+      if (!ref) return pt;
+      const dlat = ref[0] - pt[0];
+      const dlon = ref[1] - pt[1];
+      const len = Math.sqrt(dlat * dlat + dlon * dlon);
+      if (len === 0) return pt;
+      // Perpendicular: rotate 90 degrees
+      const perpLat = -dlon / len;
+      const perpLon = dlat / len;
+      return [pt[0] + perpLat * amount, pt[1] + perpLon * amount];
+    };
+
+    // Build offset coords per line
+    const result = new Map<string, [number, number][]>();
+    for (const line of lines) {
+      const coords = rawCoords.get(line.id)!;
+      if (line.shape) {
+        result.set(line.id, coords); // No offset for shaped lines
+        continue;
+      }
+
+      const offsetCoords: [number, number][] = [];
+      for (let i = 0; i < coords.length; i++) {
+        // Check if segments around this point are shared
+        let maxOverlap = 1;
+        let myIndex = 0;
+
+        // Check segment before (i-1 -> i)
+        if (i > 0) {
+          const key = segKey(coords[i - 1], coords[i]);
+          const shared = segmentLines.get(key) || [line.id];
+          if (shared.length > maxOverlap) {
+            maxOverlap = shared.length;
+            myIndex = shared.indexOf(line.id);
+          }
+        }
+        // Check segment after (i -> i+1)
+        if (i < coords.length - 1) {
+          const key = segKey(coords[i], coords[i + 1]);
+          const shared = segmentLines.get(key) || [line.id];
+          if (shared.length > maxOverlap) {
+            maxOverlap = shared.length;
+            myIndex = shared.indexOf(line.id);
+          }
+        }
+
+        if (maxOverlap <= 1) {
+          offsetCoords.push(coords[i]);
+        } else {
+          // Center the group: offset = (index - (count-1)/2) * OFFSET
+          const centerOffset = (myIndex - (maxOverlap - 1) / 2) * OFFSET;
+          offsetCoords.push(
+            offsetPoint(
+              coords[i],
+              i > 0 ? coords[i - 1] : null,
+              i < coords.length - 1 ? coords[i + 1] : null,
+              centerOffset
+            )
+          );
+        }
+      }
+      result.set(line.id, offsetCoords);
+    }
+
+    return result;
+  }, [lines]);
+
   // Build shape lookup per line shortName
   const lineShapeMap = useMemo(() => {
     const map = new Map<string, [number, number][]>();
@@ -317,11 +426,11 @@ export function LiveTrainMap() {
               const realtimeId = lineIdToRealtimeId.get(line.id);
               if (realtimeId && !visibleLines.has(realtimeId)) return null;
 
-              const coords = line.shape
+              const coords = offsetLineCoords.get(line.id) || (line.shape
                 ? line.shape
                 : line.stations
                     .filter((s) => s.stopLat && s.stopLon)
-                    .map((s) => [s.stopLat, s.stopLon] as [number, number]);
+                    .map((s) => [s.stopLat, s.stopLon] as [number, number]));
 
               return (
                 <Polyline
