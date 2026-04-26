@@ -9,6 +9,18 @@ import Link from "next/link";
 const COUNTDOWN_LIMIT = 5;
 const KTMB_TIMETABLE_URL = "https://www.ktmb.com.my/TrainTime.html";
 
+const KTMB_LINE_HINTS: Record<string, string> = {
+  "ktm-seremban": "Select \"Batu Caves - Pulau Sebang\" on the KTMB site",
+  "ktm-port-klang": "Select \"Tg. Malim - Pelabuhan Klang\" on the KTMB site",
+  "ktm-padang-besar": "Select \"Komuter Utara\" on the KTMB site",
+  "ktm-ipoh": "Select \"Komuter Utara\" on the KTMB site",
+  "ktm-ets": "Select \"ETS\" timetable on the KTMB site",
+  "ktm-shuttle": "Select \"Intercity Eastbound\" on the KTMB site",
+  "ktm-ert": "Select \"Intercity Eastbound\" on the KTMB site",
+  "ktm-es": "Select \"Intercity Southbound\" on the KTMB site",
+  "ktm-tebrau": "Select \"JB Sentral - Woodlands\" on the KTMB site",
+};
+
 export function ArrivalBoard({ stopId, stopName, routeId, lineId }: { stopId: string; stopName: string; routeId?: string; lineId?: string }) {
   const { direction0, direction1, dir0Label, dir1Label, isLoading, refresh } = useArrivals(stopId, routeId);
   const [activeDir, setActiveDir] = useState(0);
@@ -129,10 +141,17 @@ export function ArrivalBoard({ stopId, stopName, routeId, lineId }: { stopId: st
           href={KTMB_TIMETABLE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 py-2.5 mt-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+          className="flex flex-col items-center gap-0.5 py-3 mt-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
         >
-          <ExternalLink className="w-3.5 h-3.5" />
-          View official KTMB timetable
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+            <ExternalLink className="w-3.5 h-3.5" />
+            View official KTMB timetable
+          </span>
+          {lineId && KTMB_LINE_HINTS[lineId] && (
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+              {KTMB_LINE_HINTS[lineId]}
+            </span>
+          )}
         </a>
       )}
 
