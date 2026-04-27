@@ -103,7 +103,7 @@ export function StationPicker({ label, lines, value, onChange }: StationPickerPr
         >
           {results.map((r, i) => (
             <button
-              key={r.stopId}
+              key={`${r.stopId}_${r.lineId}`}
               type="button"
               onMouseDown={(e) => { e.preventDefault(); handleSelect(r); }}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${

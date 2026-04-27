@@ -95,7 +95,18 @@ function dijkstra(
 
       const penalty = edge.type === "transfer" ? TRANSFER_PENALTY : 0;
       const extraPenalty = edgePenalties?.get(`${current.stopId}->${edge.toStopId}`) ?? 0;
-      const newCost = current.cost + edge.travelSeconds + penalty + extraPenalty;
+
+      // Penalize switching between different rail routes at a shared station
+      // (e.g., ETS to KTM-PK at the same stop — you'd need to wait for a different train)
+      let routeSwitchPenalty = 0;
+      if (edge.type === "rail" && current.path.length > 0) {
+        const lastStep = current.path[current.path.length - 1];
+        if (lastStep.type === "rail" && lastStep.routeId !== edge.routeId) {
+          routeSwitchPenalty = TRANSFER_PENALTY;
+        }
+      }
+
+      const newCost = current.cost + edge.travelSeconds + penalty + extraPenalty + routeSwitchPenalty;
 
       queue.push({
         stopId: edge.toStopId,

@@ -23,12 +23,17 @@ export function buildNetworkGraph(data: GTFSData): NetworkGraph {
 
   // Add rail edges for each route (both directions)
   for (const [routeId, orderedStops] of data.stopsForRoute) {
-    // Find a direction-0 trip to get travel times
+    // Find the longest direction-0 trip to get the most complete travel times
     let templateTripId: string | null = null;
+    let templateStopCount = 0;
     for (const [tripId, trip] of data.trips) {
       if (trip.route_id === routeId && trip.direction_id === 0) {
-        templateTripId = tripId;
-        break;
+        const tripStops = data.stopTimesByTrip.get(tripId);
+        const count = tripStops?.length ?? 0;
+        if (count > templateStopCount) {
+          templateTripId = tripId;
+          templateStopCount = count;
+        }
       }
     }
 
