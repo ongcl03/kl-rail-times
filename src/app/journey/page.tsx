@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useLines } from "@/hooks/useLines";
 import { useJourney } from "@/hooks/useJourney";
 import { StationPicker } from "@/components/journey/StationPicker";
@@ -18,6 +18,7 @@ function JourneyContent() {
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
   const toParam = searchParams.get("to");
+  const router = useRouter();
   const { favoriteJourneys, isJourneyFavorite, toggleJourney, isLoaded: favsLoaded } = useFavorites();
   const [from, setFrom] = useState<Station>(null);
   const [to, setTo] = useState<Station>(null);
@@ -51,6 +52,12 @@ function JourneyContent() {
       const s = findStation(toParam);
       if (s) setTo(s);
     }
+    // Auto-search if both from and to are provided (e.g., navigating back)
+    if (fromParam && toParam) {
+      setSearchFrom(fromParam);
+      setSearchTo(toParam);
+      setSearched(true);
+    }
     setParamsApplied(true);
   }, [paramsApplied, fromParam, toParam, lines]);
 
@@ -72,6 +79,14 @@ function JourneyContent() {
       setSearchDate(newDate);
     }
     setSearched(true);
+
+    // Persist search in URL so back navigation restores it
+    const params = new URLSearchParams();
+    params.set("from", from.stopId);
+    if (to) params.set("to", to.stopId);
+    if (newTime) params.set("time", newTime);
+    if (newDate) params.set("date", newDate);
+    router.replace(`/journey?${params.toString()}`, { scroll: false });
   };
 
   const handleSwap = () => {

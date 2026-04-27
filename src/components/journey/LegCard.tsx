@@ -5,7 +5,9 @@ import { Footprints, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 function formatDuration(seconds: number): string {
-  const m = Math.round(seconds / 60);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}min`;
   return `${m} min`;
 }
 
