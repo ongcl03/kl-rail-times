@@ -520,6 +520,11 @@ export function LiveTrainMap() {
         )}
       </div>
 
+      {/* KTM disclaimer */}
+      <div className="absolute top-3 left-3 z-[1000] max-w-[220px] px-3 py-2 rounded-lg bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm text-[11px] text-slate-400 dark:text-slate-500 leading-snug">
+        KTM lines shown as straight lines between stations (actual track geometry not available)
+      </div>
+
       {/* Status bar */}
       <div className="absolute bottom-12 left-4 z-[1000] flex items-center gap-2 px-5 py-3 rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md text-sm text-slate-500 dark:text-slate-400">
         {visibleVehicles.length > 0 ? (
