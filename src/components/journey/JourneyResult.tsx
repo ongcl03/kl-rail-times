@@ -112,12 +112,15 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
                       {stopCount} stops  ·  {j.distanceKm ?? "?"} km
                     </span>
                     <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 shrink-0" />
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div
+                      className="flex items-center gap-1 flex-nowrap overflow-x-auto"
+                      style={{ scrollbarWidth: "none" }}
+                    >
                       {railLegs.map((leg, li) => (
-                        <div key={li} className="flex items-center gap-1">
+                        <div key={li} className="flex items-center gap-1 shrink-0">
                           {li > 0 && <span className="text-[12px] font-medium text-slate-400 dark:text-slate-500">→</span>}
                           <span
-                            className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white"
+                            className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white whitespace-nowrap"
                             style={{ backgroundColor: leg.lineColor }}
                           >
                             {leg.lineShortName}
@@ -181,64 +184,103 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
               )}
             </div>
           </div>
-          {/* Desktop: line badges + map icon */}
-          <div className="hidden sm:flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1">
-              {journey.legs
-                .filter((l) => l.type === "rail")
-                .map((leg, i) => (
-                  <div key={i} className="flex items-center gap-1">
-                    {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 mx-0.5" />}
-                    <div
-                      className="h-3 rounded-full"
-                      style={{
-                        backgroundColor: leg.lineColor,
-                        width: `${Math.max(28, Math.min(80, leg.travelSeconds / 10))}px`,
-                      }}
-                    />
-                    <span className="text-[10px] font-bold" style={{ color: leg.lineColor }}>
+          {/* Desktop (few legs): line badges inline */}
+          {(() => {
+            const railLegs = journey.legs.filter((l) => l.type === "rail");
+            if (railLegs.length > 3) return null;
+            const totalTravel = railLegs.reduce((s, l) => s + l.travelSeconds, 0);
+            return (
+              <div className="hidden sm:flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1">
+                  {railLegs.map((leg, i) => (
+                    <div key={i} className="flex items-center gap-1 shrink-0">
+                      {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 mx-0.5" />}
+                      <div
+                        className="h-3 rounded-full"
+                        style={{
+                          backgroundColor: leg.lineColor,
+                          width: `${Math.max(28, Math.min(80, leg.travelSeconds / 10))}px`,
+                        }}
+                      />
+                      <span className="text-[10px] font-bold whitespace-nowrap" style={{ color: leg.lineColor }}>
+                        {leg.lineShortName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {mapUrl && (
+                  <Link
+                    href={mapUrl}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                    title="View on map"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Line visualization: full-width row for many legs, or mobile-only for few legs */}
+        {(() => {
+          const railLegs = journey.legs.filter((l) => l.type === "rail");
+          const totalTravel = railLegs.reduce((s, l) => s + l.travelSeconds, 0);
+          const isManyLegs = railLegs.length > 3;
+          return (
+            <>
+              {/* Proportional bars: always on desktop for many legs, mobile-only for few legs */}
+              <div className={`items-center gap-1 mt-3 ${isManyLegs ? "hidden sm:flex" : "flex sm:hidden"}`}>
+                {railLegs.map((leg, i) => (
+                  <div key={i} className="flex items-center gap-1" style={{ flex: leg.travelSeconds / totalTravel }}>
+                    {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 shrink-0" />}
+                    <div className="h-2.5 sm:h-3 rounded-full flex-1 min-w-3" style={{ backgroundColor: leg.lineColor }} />
+                    <span className="text-[10px] font-bold leading-none shrink-0" style={{ color: leg.lineColor }}>
                       {leg.lineShortName}
                     </span>
                   </div>
                 ))}
-            </div>
-            {mapUrl && (
-              <Link
-                href={mapUrl}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
-                title="View on map"
-              >
-                <MapPin className="w-4 h-4" />
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile: full-width line visualization */}
-        <div className="flex sm:hidden items-center gap-1 mt-3">
-          {(() => {
-            const railLegs = journey.legs.filter((l) => l.type === "rail");
-            const totalTravel = railLegs.reduce((s, l) => s + l.travelSeconds, 0);
-            return railLegs.map((leg, i) => (
-              <div key={i} className="flex items-center gap-1" style={{ flex: leg.travelSeconds / totalTravel }}>
-                {i > 0 && <RefreshCw className="w-3 h-3 text-slate-400 shrink-0" />}
-                <div className="h-2.5 rounded-full flex-1 min-w-3" style={{ backgroundColor: leg.lineColor }} />
-                <span className="text-[10px] font-bold leading-none shrink-0" style={{ color: leg.lineColor }}>
-                  {leg.lineShortName}
-                </span>
+                {mapUrl && (
+                  <Link
+                    href={mapUrl}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shrink-0 ml-0.5"
+                    title="View on map"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </Link>
+                )}
               </div>
-            ));
-          })()}
-          {mapUrl && (
-            <Link
-              href={mapUrl}
-              className="p-1 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 shrink-0 ml-0.5"
-              title="View on map"
-            >
-              <MapPin className="w-3.5 h-3.5" />
-            </Link>
-          )}
-        </div>
+              {/* Mobile badge chain: scrollable badges for many legs */}
+              {isManyLegs && (
+                <div
+                  className="flex sm:hidden items-center gap-1.5 mt-3 overflow-x-auto pb-1"
+                  style={{ scrollbarWidth: "none" }}
+                >
+                  {railLegs.map((leg, i) => (
+                    <div key={i} className="flex items-center gap-1.5 shrink-0">
+                      {i > 0 && <span className="text-[11px] text-slate-400">→</span>}
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white whitespace-nowrap"
+                        style={{ backgroundColor: leg.lineColor }}
+                      >
+                        {leg.lineShortName}
+                      </span>
+                    </div>
+                  ))}
+                  {mapUrl && (
+                    <Link
+                      href={mapUrl}
+                      className="p-1 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 shrink-0 ml-0.5"
+                      title="View on map"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
         {journey.fare && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500 mt-3 pt-3 border-t border-slate-100/80 dark:border-slate-700/60">
             <span>
