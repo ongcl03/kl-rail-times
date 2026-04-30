@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { JourneyRoute } from "@/lib/journey/types";
 import { LegCard } from "./LegCard";
-import { Clock, ArrowRight, RefreshCw, MapPin, Route } from "lucide-react";
+import { Clock, ArrowRight, RefreshCw, MapPin, Route, ExternalLink } from "lucide-react";
 
 function titleCase(str: string): string {
   return str
@@ -182,6 +182,14 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
                   </span>
                 </>
               )}
+              {!journey.fare && journey.fareRange && journey.fareRange.min && (
+                <>
+                  <span>·</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    ~RM {journey.fareRange.min}–{journey.fareRange.max}
+                  </span>
+                </>
+              )}
             </div>
           </div>
           {/* Desktop (few legs): line badges inline */}
@@ -294,6 +302,36 @@ export function JourneyResult({ journeys }: { journeys: JourneyRoute[] }) {
             <span>
               <span className="font-medium text-slate-500 dark:text-slate-400">RM {journey.fare.concession}</span> concession
             </span>
+          </div>
+        )}
+        {!journey.fare && journey.fareRange && (
+          <div className="mt-3 pt-3 border-t border-slate-100/80 dark:border-slate-700/60">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
+              {journey.fareRange.min ? (
+                <span>
+                  <span className="font-medium text-slate-500 dark:text-slate-400">
+                    ~RM {journey.fareRange.min}–{journey.fareRange.max}
+                  </span>{" "}
+                  ({journey.fareRange.service})
+                </span>
+              ) : (
+                <span className="text-slate-500 dark:text-slate-400">
+                  Fare not available for this route
+                </span>
+              )}
+              <span className="text-slate-300 dark:text-slate-600">·</span>
+              <a
+                href={journey.fareRange.bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Check fare on {journey.fareRange.service} <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5">
+              Fare may vary based on service class, peak/off-peak, and booking time. Please verify on the official site.
+            </p>
           </div>
         )}
       </div>}

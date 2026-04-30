@@ -28,12 +28,20 @@ export interface JourneyFare {
   concession: string;
 }
 
+export interface JourneyFareRange {
+  min: string;
+  max: string;
+  bookingUrl: string;
+  service: string;
+}
+
 export interface JourneyRoute {
   legs: JourneyLeg[];
   totalSeconds: number;
   transfers: number;
   distanceKm?: number;
   fare?: JourneyFare;
+  fareRange?: JourneyFareRange;
   departures: {
     time: string;
     minutesAway: number;

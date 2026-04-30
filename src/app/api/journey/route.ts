@@ -1,8 +1,90 @@
 import { NextResponse } from "next/server";
 import { findAlternativeRoutes } from "@/lib/journey/pathfinder";
-import { fetchFare } from "@/lib/journey/fare";
+import { fetchJourneyFare } from "@/lib/journey/fare";
 import { getNextArrivals } from "@/lib/gtfs/schedule";
 import { parseGTFSTime } from "@/lib/utils";
+import type { JourneyRoute, JourneyFare } from "@/lib/journey/types";
+import { isKtmKomuterStop, isKtmNorthernStop, isKtmEtsStop } from "@/lib/journey/ktm-fares";
+
+function addFares(a: JourneyFare, b: JourneyFare): JourneyFare {
+  return {
+    cash: (parseFloat(a.cash) + parseFloat(b.cash)).toFixed(2),
+    cashless: (parseFloat(a.cashless) + parseFloat(b.cashless)).toFixed(2),
+    concession: (parseFloat(a.concession) + parseFloat(b.concession)).toFixed(2),
+  };
+}
+
+function isKtmStop(stopId: string): boolean {
+  return isKtmKomuterStop(stopId) || isKtmNorthernStop(stopId) || isKtmEtsStop(stopId);
+}
+
+async function computeJourneyFare(journey: JourneyRoute) {
+  const railLegs = journey.legs.filter((l) => l.type === "rail");
+  if (railLegs.length === 0) return;
+
+  // Group consecutive rail legs by operator using stop IDs (not route IDs)
+  const segments: { from: string; to: string }[] = [];
+  let currentFrom = railLegs[0].fromStopId;
+  let currentTo = railLegs[0].toStopId;
+  let prevIsKtm = isKtmStop(railLegs[0].fromStopId);
+
+  for (let i = 1; i < railLegs.length; i++) {
+    const leg = railLegs[i];
+    const legIsKtm = isKtmStop(leg.fromStopId);
+
+    if (legIsKtm === prevIsKtm) {
+      currentTo = leg.toStopId;
+    } else {
+      segments.push({ from: currentFrom, to: currentTo });
+      currentFrom = leg.fromStopId;
+      currentTo = leg.toStopId;
+    }
+    prevIsKtm = legIsKtm;
+  }
+  segments.push({ from: currentFrom, to: currentTo });
+
+  // If single segment, simple lookup
+  if (segments.length === 1) {
+    const result = await fetchJourneyFare(segments[0].from, segments[0].to);
+    if (result.fare) journey.fare = result.fare;
+    if (result.fareRange) journey.fareRange = result.fareRange;
+    return;
+  }
+
+  // Multiple segments: fetch each and sum
+  const results = await Promise.all(
+    segments.map((s) => fetchJourneyFare(s.from, s.to))
+  );
+
+  let totalFare: JourneyFare | null = null;
+  let hasUncalculable = false;
+  let fareRangeResult: typeof results[0]["fareRange"] = undefined;
+
+  for (const result of results) {
+    if (result.fareRange) {
+      hasUncalculable = true;
+      if (!fareRangeResult) fareRangeResult = result.fareRange;
+    }
+    if (result.fare) {
+      totalFare = totalFare ? addFares(totalFare, result.fare) : result.fare;
+    }
+    if (!result.fare && !result.fareRange) {
+      hasUncalculable = true;
+    }
+  }
+
+  if (hasUncalculable) {
+    // Some segments can't be calculated — don't show partial fare as total
+    journey.fare = undefined;
+    journey.fareRange = fareRangeResult ?? {
+      min: "", max: "",
+      bookingUrl: "https://online.ktmb.com.my/",
+      service: "KTMB",
+    };
+  } else if (totalFare) {
+    journey.fare = totalFare;
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -30,18 +112,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ mode: "journey", journeys: [], error: "No route found" });
     }
 
-    // Fetch fare for each route
-    await Promise.all(
-      journeys.map(async (journey) => {
-        const railLegs = journey.legs.filter((l) => l.type === "rail");
-        if (railLegs.length > 0) {
-          const fareFrom = railLegs[0].fromStopId;
-          const fareTo = railLegs[railLegs.length - 1].toStopId;
-          const fare = await fetchFare(fareFrom, fareTo);
-          if (fare) journey.fare = fare;
-        }
-      })
-    );
+    // Fetch fare for each route (per-segment for mixed journeys)
+    await Promise.all(journeys.map(computeJourneyFare));
 
     return NextResponse.json({ mode: "journey", journeys });
   } catch (error) {
