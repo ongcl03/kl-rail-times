@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import { Header } from "@/components/layout/Header";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({
             GTFS API
           </footer>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
