@@ -10,7 +10,7 @@ import { TrainMarker } from "./TrainMarker";
 import { StationMarker } from "./StationMarker";
 import { JourneyMarker } from "./JourneyMarker";
 import { LineFilter } from "./LineFilter";
-import { RefreshCw, Layers } from "lucide-react";
+import { RefreshCw, Layers, Map as MapIcon } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
 const KL_CENTER: [number, number] = [3.14, 101.69];
@@ -489,35 +489,50 @@ export function LiveTrainMap() {
       {/* Line filter (hidden in journey mode) */}
       {!isJourneyMode && <LineFilter visibleLines={visibleLines} onToggle={handleToggle} />}
 
-      {/* Map style picker */}
-      <div className="absolute bottom-12 right-4 z-[1000]">
-        <button
-          onClick={() => setShowStylePicker((p) => !p)}
-          className="p-3 rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-          aria-label="Change map style"
+      {/* Map controls (bottom-right): transit map + style picker */}
+      <div className="absolute bottom-12 right-4 z-[1000] flex items-center gap-2">
+        {/* Official Prasarana transit map PDF */}
+        <a
+          href="https://myrapid.com.my/wp-content/uploads/2026/06/Integrated-Transit-Map_110626_V2.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors text-sm font-medium whitespace-nowrap"
+          aria-label="Open official Prasarana transit map (PDF)"
+          title="Official Prasarana Transit Map"
         >
-          <Layers className="w-5 h-5" />
-        </button>
-        {showStylePicker && (
-          <div className="absolute bottom-14 right-0 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden min-w-[140px]">
-            {(Object.keys(TILE_URLS) as MapStyle[]).map((style) => (
-              <button
-                key={style}
-                onClick={() => {
-                  setMapStyle(style);
-                  setShowStylePicker(false);
-                }}
-                className={`block w-full text-left px-5 py-3 text-sm transition-colors ${
-                  mapStyle === style
-                    ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                }`}
-              >
-                {STYLE_LABELS[style]}
-              </button>
-            ))}
-          </div>
-        )}
+          <MapIcon className="w-5 h-5" />
+          Official Map
+        </a>
+        {/* Map style picker */}
+        <div className="relative">
+          <button
+            onClick={() => setShowStylePicker((p) => !p)}
+            className="p-3 rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+            aria-label="Change map style"
+          >
+            <Layers className="w-5 h-5" />
+          </button>
+          {showStylePicker && (
+            <div className="absolute bottom-14 right-0 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden min-w-[140px]">
+              {(Object.keys(TILE_URLS) as MapStyle[]).map((style) => (
+                <button
+                  key={style}
+                  onClick={() => {
+                    setMapStyle(style);
+                    setShowStylePicker(false);
+                  }}
+                  className={`block w-full text-left px-5 py-3 text-sm transition-colors ${
+                    mapStyle === style
+                      ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {STYLE_LABELS[style]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KTM disclaimer */}
