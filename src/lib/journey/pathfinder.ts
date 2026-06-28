@@ -226,6 +226,7 @@ function finalizeLeg(
 /** Find next departures from origin on the first leg's route */
 function computeDepartures(
   originStopId: string,
+  destStopId: string,
   firstLegRouteId: string,
   totalTravelSeconds: number,
   data: GTFSData,
@@ -235,9 +236,16 @@ function computeDepartures(
   const departures: JourneyRoute["departures"] = [];
   const nowSeconds = requestedTimeSeconds;
 
-  // Find the direction: check if origin appears before destination in stopsForRoute
+  // Determine expected direction using stopsForRoute (direction 0 ordering)
   const orderedStops = data.stopsForRoute.get(firstLegRouteId);
-  if (!orderedStops) return [];
+  let expectedDirection: number | undefined;
+  if (orderedStops && orderedStops.length > 0) {
+    const fromIdx = orderedStops.findIndex((s) => s.stop_id === originStopId);
+    const toIdx = orderedStops.findIndex((s) => s.stop_id === destStopId);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      expectedDirection = fromIdx < toIdx ? 0 : 1;
+    }
+  }
 
   // Find stop_times for this stop on this route
   const stopTimes = data.stopTimesByStop.get(originStopId);
@@ -257,46 +265,61 @@ function computeDepartures(
     }
   }
 
-  // Find matching trips (on the right route and active today)
+  // Find matching trips (on the right route, active, and correct direction)
   for (const st of stopTimes) {
     const trip = data.trips.get(st.trip_id);
     if (!trip) continue;
     if (trip.route_id !== firstLegRouteId) continue;
     if (!activeServices.has(trip.service_id)) continue;
+    if (expectedDirection !== undefined && trip.direction_id !== expectedDirection) continue;
 
-    // Get frequencies for this trip
     const freqs = data.frequencies.get(trip.trip_id);
-    if (!freqs || freqs.length === 0) continue;
 
-    const tripStops = data.stopTimesByTrip.get(trip.trip_id);
-    if (!tripStops || tripStops.length === 0) continue;
+    if (freqs && freqs.length > 0) {
+      // Frequency-based scheduling (Prasarana / LRT / MRT)
+      const tripStops = data.stopTimesByTrip.get(trip.trip_id);
+      if (!tripStops || tripStops.length === 0) continue;
 
-    const tripStartSeconds = parseGTFSTime(tripStops[0].departure_time);
-    const stopArrivalSeconds = parseGTFSTime(st.arrival_time);
-    const offsetSeconds = stopArrivalSeconds - tripStartSeconds;
+      const tripStartSeconds = parseGTFSTime(tripStops[0].departure_time);
+      const stopArrivalSeconds = parseGTFSTime(st.arrival_time);
+      const offsetSeconds = stopArrivalSeconds - tripStartSeconds;
 
-    for (const freq of freqs) {
-      const windowStart = parseGTFSTime(freq.start_time);
-      const windowEnd = parseGTFSTime(freq.end_time);
+      for (const freq of freqs) {
+        const windowStart = parseGTFSTime(freq.start_time);
+        const windowEnd = parseGTFSTime(freq.end_time);
 
-      for (let dep = windowStart; dep < windowEnd; dep += freq.headway_secs) {
-        const arrivalAtOrigin = dep + offsetSeconds;
-        if (arrivalAtOrigin < nowSeconds) continue;
-        if (arrivalAtOrigin > nowSeconds + 3600) break; // next hour only
+        for (let dep = windowStart; dep < windowEnd; dep += freq.headway_secs) {
+          const arrivalAtOrigin = dep + offsetSeconds;
+          if (arrivalAtOrigin < nowSeconds) continue;
+          if (arrivalAtOrigin > nowSeconds + 3600) break; // next hour only
 
-        const arrivalAtDestination = arrivalAtOrigin + totalTravelSeconds;
+          const arrivalAtDestination = arrivalAtOrigin + totalTravelSeconds;
 
-        departures.push({
-          time: formatTime(arrivalAtOrigin % 86400),
-          minutesAway: Math.round((arrivalAtOrigin - nowSeconds) / 60),
-          arrivalTime: formatTime(arrivalAtDestination % 86400),
-        });
+          departures.push({
+            time: formatTime(arrivalAtOrigin % 86400),
+            minutesAway: Math.round((arrivalAtOrigin - nowSeconds) / 60),
+            arrivalTime: formatTime(arrivalAtDestination % 86400),
+          });
 
-        if (departures.length >= 5) return departures;
+          if (departures.length >= 5) return departures;
+        }
       }
-    }
+    } else {
+      // Fixed-schedule trips (KTM Komuter) — use exact stop_times
+      const arrivalAtOrigin = parseGTFSTime(st.arrival_time);
+      if (arrivalAtOrigin < nowSeconds) continue;
+      if (arrivalAtOrigin > nowSeconds + 3600) continue;
 
-    if (departures.length >= 5) break;
+      const arrivalAtDestination = arrivalAtOrigin + totalTravelSeconds;
+
+      departures.push({
+        time: formatTime(arrivalAtOrigin % 86400),
+        minutesAway: Math.round((arrivalAtOrigin - nowSeconds) / 60),
+        arrivalTime: formatTime(arrivalAtDestination % 86400),
+      });
+
+      if (departures.length >= 5) break;
+    }
   }
 
   departures.sort((a, b) => a.minutesAway - b.minutesAway);
@@ -338,7 +361,7 @@ function buildJourneyFromPath(
   const firstRailLeg = legs.find((l) => l.type === "rail");
   const requestTime = timeSeconds ?? getCurrentSeconds();
   const departures = firstRailLeg
-    ? computeDepartures(firstRailLeg.fromStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
+    ? computeDepartures(firstRailLeg.fromStopId, firstRailLeg.toStopId, firstRailLeg.routeId, totalSeconds, data, requestTime, dateStr)
     : [];
 
   const distanceKm = Math.round(legs.reduce((sum, leg) => sum + legDistanceKm(leg, data), 0) * 100) / 100;
