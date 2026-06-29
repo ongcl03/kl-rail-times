@@ -30,6 +30,8 @@ const CROSS_LINE: InterchangeGroup[] = [
   { name: "Bukit Bintang", stops: ["KG18A", "MR6"], walkMinutes: 5 },
   { name: "Tun Razak Exchange", stops: ["KG20", "PY23"], walkMinutes: 4 },
   { name: "Sungai Besi", stops: ["SP16", "PY29"], walkMinutes: 4 },
+  { name: "Bandar Utama", stops: ["SA1", "KG09"], walkMinutes: 4 },
+  { name: "Glenmarie", stops: ["SA7", "KJ27"], walkMinutes: 4 },
 ];
 
 // KTM ↔ Prasarana interchanges

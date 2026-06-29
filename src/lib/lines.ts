@@ -43,6 +43,16 @@ const PRASARANA_LINES: LineMeta[] = [
     realtimeRouteId: "SP",
   },
   {
+    id: "shah-alam",
+    name: "LRT Shah Alam",
+    shortName: "SA",
+    color: "#59b8e6",
+    textColor: "#000000",
+    type: "LRT",
+    gtfsRouteId: "SA",
+    realtimeRouteId: "SA",
+  },
+  {
     id: "mrt-kajang",
     name: "MRT Kajang",
     shortName: "KG",

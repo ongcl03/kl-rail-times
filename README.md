@@ -21,6 +21,7 @@ A real-time train arrival and journey planning app for the Klang Valley rail net
 | MRT Putrajaya | PY | MRT |
 | KL Monorail | MR | Monorail |
 | BRT Sunway | BRT | BRT |
+| LRT Shah Alam | SA | LRT |
 
 ## Data Source
 

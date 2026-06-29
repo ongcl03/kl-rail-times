@@ -12,7 +12,7 @@ This app relies on Malaysia's open government GTFS data feeds. While the data is
 ## Prasarana (Rapid KL)
 
 Prasarana data is generally **complete and reliable**:
-- All 7 lines have full station lists, frequency windows, and service calendars
+- All 8 lines have full station lists, frequency windows, and service calendars
 - Route geometry (`shapes.txt`) is included for accurate map polylines
 - Realtime vehicle positions are available but **unstable for rail** — the feed works intermittently
 
