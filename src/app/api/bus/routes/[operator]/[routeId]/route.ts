@@ -33,6 +33,14 @@ export async function GET(
     const color = route.route_color || "#6B7280";
     const textColor = getTextColor(color.replace("#", "").padEnd(6, "0"));
 
+    // Apply same MRT Feeder name-mapping: when route_short_name === route_id (internal DB key),
+    // the human-readable code is in route_long_name.
+    const rawShort = String(route.route_short_name ?? "");
+    const rawLong = String(route.route_long_name ?? "");
+    const shortIsInternalId = rawShort === routeId || rawShort === "";
+    const shortName = shortIsInternalId ? (rawLong || routeId) : rawShort;
+    const longName = shortIsInternalId ? "" : rawLong;
+
     const toStopInfos = (stops: typeof dirs.dir0): BusStopInfo[] =>
       stops.map((s, i) => ({
         stopId: s.stop_id,
@@ -44,8 +52,8 @@ export async function GET(
 
     return NextResponse.json({
       routeId,
-      shortName: route.route_short_name || routeId,
-      longName: route.route_long_name || "",
+      shortName,
+      longName,
       color,
       textColor,
       operator,
